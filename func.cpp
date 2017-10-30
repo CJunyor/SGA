@@ -329,21 +329,22 @@ bool CONTROL(DATABASE *db, vector<string>CONTR[]){
     TABLE_HEADER *TABLE_H=new TABLE_HEADER[TAB_N];
     TABLE *TABELAS=new TABLE[TAB_N];
     M_DADO *M_DADOS=new M_DADO[TAB_N];
-    int P;
+    int P=5;
     DBASE.open(db->NOME, ofstream::out);
     if(!DBASE.is_open()) return false;
     DBASE.write(cchar(&BIT), 1);
     DBASE.write(cchar(&TAB_N), sizeof(int));
-    //TAM=DBASE.tellp();
-    //DBASE.seekp(DATABASE.BASE_HEADER.NUMERO_TABELAS*sizeof(SEGMENT), ios_base::cur);
-    P=TAB_N*sizeof(SEGMENT);
+    P+=TAB_N*sizeof(SEGMENT);
+    cout(P);
     for(int i=0;i<TAB_N;i++){
         db->TABELAS_HEADER_SEG[i].BASE=P;
         db->TABELAS_HEADER_SEG[i].LIMIT=sizeof(TABLE_HEADER);
         P+=sizeof(TABLE_HEADER);
     }
     DBASE.write(cchar(db->TABELAS_HEADER_SEG), TAB_N*sizeof(SEGMENT));
-    P+=TAB_N*sizeof(TABLE_HEADER);
+    cout(DBASE.tellp());
+    //P+=TAB_N*sizeof(TABLE_HEADER);
+    cout(P);
     for(int i=0;i<TAB_N;i++){
         TABLE_H[i].NUMERO_COLUNAS=stoi(CONTR[i][1]);
         TABLE_H[i].NUMERO_REGISTROS=0;
@@ -352,7 +353,9 @@ bool CONTROL(DATABASE *db, vector<string>CONTR[]){
         P+=sizeof(TABLE);
     }
     DBASE.write(cchar(TABLE_H), TAB_N*sizeof(TABLE_HEADER));
-    P+=TAB_N*sizeof(TABLE);
+    cout(DBASE.tellp());
+    //P+=TAB_N*sizeof(TABLE);
+    cout(P);
     for(int i=0;i<TAB_N;i++){
         TABELAS[i].META_TABLE_POSITION.BASE=P;
         TABELAS[i].META_TABLE_POSITION.LIMIT=sizeof(SEGMENT)*(TABLE_H[i].NUMERO_COLUNAS+2);
@@ -361,17 +364,18 @@ bool CONTROL(DATABASE *db, vector<string>CONTR[]){
         P+=sizeof(SEGMENT)*(TABLE_H[i].NUMERO_COLUNAS+2);
     }
     DBASE.write(cchar(TABELAS), TAB_N*sizeof(TABLE));
+    cout(DBASE.tellp());
     for(int i=0;i<TAB_N;i++){
         M_DADOS[i].NOME.BASE=P;
-        M_DADOS[i].NOME.LIMIT=P+CONTR[i][0].size();
+        M_DADOS[i].NOME.LIMIT=CONTR[i][0].size();
         P+=CONTR[i][0].size();
         M_DADOS[i].TIPOS.BASE=P;
-        M_DADOS[i].TIPOS.LIMIT=P+CONTR[i][2].size();
+        M_DADOS[i].TIPOS.LIMIT=CONTR[i][2].size();
         P+=CONTR[i][2].size();
         M_DADOS[i].NOMES=new SEGMENT[TABLE_H[i].NUMERO_COLUNAS];
         for(int j=0;j<TABLE_H[i].NUMERO_COLUNAS;j++){
             M_DADOS[i].NOMES[j].BASE=P;
-            M_DADOS[i].NOMES[j].LIMIT=P+CONTR[i][j+3].size();
+            M_DADOS[i].NOMES[j].LIMIT=CONTR[i][j+3].size();
             P+=CONTR[i][j+3].size();
         }
         DBASE.write(cchar(&M_DADOS[i].NOME), sizeof(SEGMENT));

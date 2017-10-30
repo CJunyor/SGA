@@ -20,24 +20,26 @@ int main()
     c[1].push_back("Marca");
     c[1].push_back("Preco");
     CRIAR_DATABASE("TESTE",c,2);
-    */
+    //*/
+
+    //*
     fstream DBASE;
     DBASE.open("TESTE", ofstream::in);
     char bit;
     DATABASE db;
-    TABLE_HEADER *TABLE_H=new TABLE_HEADER[2];
-    TABLE *TABELAS=new TABLE[2];
-    M_DADO *M_DADOS=new M_DADO[3];
+    TABLE_HEADER TABLE_H[2];//=new TABLE_HEADER[2];
+    TABLE TABELAS[2];//=new TABLE[2];
+    M_DADO M_DADOS[3];//=new M_DADO[3];
     db.NOME="TESTE";
     DBASE.read(cchar(&bit),1);
     DBASE.read(cchar(&db.BASE_HEADER.NUMERO_TABELAS), sizeof(int));
     db.TABELAS_HEADER_SEG=new SEGMENT[db.BASE_HEADER.NUMERO_TABELAS];
     DBASE.read(cchar(db.TABELAS_HEADER_SEG), sizeof(SEGMENT)*db.BASE_HEADER.NUMERO_TABELAS);
-    DBASE.seekg(db.TABELAS_HEADER_SEG[0].BASE,DBASE.beg);
+    DBASE.seekg(db.TABELAS_HEADER_SEG[0].BASE);
     DBASE.read(cchar(TABLE_H), db.TABELAS_HEADER_SEG[0].LIMIT);
-    DBASE.seekg(TABLE_H[0].TABLE_POSITION.BASE, DBASE.beg);
+    DBASE.seekg(TABLE_H[0].TABLE_POSITION.BASE);
     DBASE.read(cchar(TABELAS), TABLE_H[0].TABLE_POSITION.LIMIT);
-    DBASE.seekg(TABELAS[0].META_TABLE_POSITION.BASE, DBASE.beg);
+    DBASE.seekg(TABELAS[0].META_TABLE_POSITION.BASE);
     DBASE.read(cchar(&M_DADOS[0].NOME), sizeof(SEGMENT));
     DBASE.read(cchar(&M_DADOS[0].TIPOS), sizeof(SEGMENT));
     DBASE.read(cchar(&M_DADOS[0].NOMES), sizeof(SEGMENT)*TABLE_H[0].NUMERO_COLUNAS);
@@ -54,5 +56,6 @@ int main()
     s[M_DADOS[0].NOME.LIMIT]='\0';
     cout(s);
     DBASE.close();
+    //*/
     return 0;
 }
