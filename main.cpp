@@ -21,10 +21,39 @@ int main()
     c[1].push_back("Preco");
     CRIAR_DATABASE("TESTE",c,2);
     //*/
+    //parte concluida
 
-    //*
+
+    /*
+    node ax;
+    MEM_REGISTER R;
+    DATABASE db;
+    R.nome="Alunos";
+    ax.info=new string;
+    ax.nome="Nome";
+    *cstring(ax.info)="Candido";
+    R.vars.push_back(ax);
+    ax.info=new string;
+    ax.nome="Matricula";
+    *cstring(ax.info)="123456789";
+    R.vars.push_back(ax);
+    ax.info = new int;
+    ax.nome = "Idade";
+    *cint(ax.info) = 19;
+    R.vars.push_back(ax);
+
+    db.NOME="TESTE";
+    INSERIR_REGISTRO(&db, R);
+
+
+    //*/
+
+
+
+    /*
     fstream DBASE;
-    DBASE.open("TESTE", ofstream::in);
+    REGISTRO R;
+    DBASE.open("TESTE", fstream::in);
     char bit;
     DATABASE db;
     TABLE_HEADER TABLE_H[2];//=new TABLE_HEADER[2];
@@ -33,28 +62,48 @@ int main()
     db.NOME="TESTE";
     DBASE.read(cchar(&bit),1);
     DBASE.read(cchar(&db.BASE_HEADER.NUMERO_TABELAS), sizeof(int));
-    db.TABELAS_HEADER_SEG=new SEGMENT[db.BASE_HEADER.NUMERO_TABELAS];
-    DBASE.read(cchar(db.TABELAS_HEADER_SEG), sizeof(SEGMENT)*db.BASE_HEADER.NUMERO_TABELAS);
-    DBASE.seekg(db.TABELAS_HEADER_SEG[0].BASE);
-    DBASE.read(cchar(TABLE_H), db.TABELAS_HEADER_SEG[0].LIMIT);
+    DBASE.read(cchar(&db.TABELAS_HEADER_SEG), sizeof(SEGMENT));
+    DBASE.seekg(db.TABELAS_HEADER_SEG.BASE);
+    DBASE.read(cchar(TABLE_H), db.TABELAS_HEADER_SEG.LIMIT);
     DBASE.seekg(TABLE_H[0].TABLE_POSITION.BASE);
     DBASE.read(cchar(TABELAS), TABLE_H[0].TABLE_POSITION.LIMIT);
     DBASE.seekg(TABELAS[0].META_TABLE_POSITION.BASE);
     DBASE.read(cchar(&M_DADOS[0].NOME), sizeof(SEGMENT));
     DBASE.read(cchar(&M_DADOS[0].TIPOS), sizeof(SEGMENT));
-    DBASE.read(cchar(&M_DADOS[0].NOMES), sizeof(SEGMENT)*TABLE_H[0].NUMERO_COLUNAS);
-    DBASE.read(cchar(&M_DADOS[1].NOME), sizeof(SEGMENT));
-    DBASE.read(cchar(&M_DADOS[1].TIPOS), sizeof(SEGMENT));
-    DBASE.read(cchar(&M_DADOS[1].NOMES), sizeof(SEGMENT)*TABLE_H[0].NUMERO_COLUNAS);
-    DBASE.read(cchar(&M_DADOS[2].NOME), sizeof(SEGMENT));
-    DBASE.read(cchar(&M_DADOS[2].TIPOS), sizeof(SEGMENT));
-    DBASE.read(cchar(&M_DADOS[2].NOMES), sizeof(SEGMENT)*TABLE_H[0].NUMERO_COLUNAS);
-    DBASE.seekg(M_DADOS[0].NOME.BASE,DBASE.beg);
-    char s[M_DADOS[0].NOME.LIMIT+1];
+    M_DADOS[0].NOMES=new SEGMENT[TABLE_H[0].NUMERO_COLUNAS];
+    DBASE.read(cchar(M_DADOS[0].NOMES), sizeof(SEGMENT)*TABLE_H[0].NUMERO_COLUNAS);
+    char s[100];
+    string s1[TABLE_H[0].NUMERO_COLUNAS+2];
+    DBASE.seekg(M_DADOS[0].NOME.BASE);
     DBASE.read(s, M_DADOS[0].NOME.LIMIT);
-    cout(M_DADOS[0].NOME.BASE);
     s[M_DADOS[0].NOME.LIMIT]='\0';
+    s1[0]=s;
+    DBASE.seekg(M_DADOS[0].TIPOS.BASE);
+    DBASE.read(s, M_DADOS[0].TIPOS.LIMIT);
+    s[M_DADOS[0].TIPOS.LIMIT]='\0';
+    s1[1]=s;
+    for(int i=0; i<TABLE_H[0].NUMERO_COLUNAS; i++){
+        DBASE.seekg(M_DADOS[0].NOMES[i].BASE);
+        DBASE.read(s, M_DADOS[0].NOMES[i].LIMIT);
+        s[M_DADOS[0].NOMES[i].LIMIT]='\0';
+        s1[i+2]=s;
+    }
+    DBASE.seekg(TABELAS[0].REGISTROS.BASE);
+    R.DADOS=new SEGMENT[TABLE_H[0].NUMERO_COLUNAS];
+    DBASE.read(cchar(R.DADOS), TABLE_H[0].NUMERO_COLUNAS*sizeof(SEGMENT));
+    DBASE.read(cchar(&R.NEXT), sizeof(SEGMENT));
+    DBASE.seekg(R.DADOS[0].BASE);
+    DBASE.read(s, R.DADOS[0].LIMIT);
+    s[R.DADOS[0].LIMIT]='\0';
     cout(s);
+    DBASE.seekg(R.DADOS[1].BASE);
+    DBASE.read(s, R.DADOS[1].LIMIT);
+    s[R.DADOS[1].LIMIT]='\0';
+    cout(s);
+    int ax;
+    DBASE.seekg(R.DADOS[2].BASE);
+    DBASE.read(cchar(&ax), R.DADOS[2].LIMIT);
+    cout(ax);
     DBASE.close();
     //*/
     return 0;
