@@ -316,108 +316,16 @@ int Iniciar(tabela *t){
 
 //=======================================================================================================
 
-
-DATABASE *CRIAR_DATABASE(string NOME, vector<string>CONTR[], int N_TAB){
-    DATABASE *db=new DATABASE;
-    db->NOME=NOME;
-    db->BASE_HEADER.NUMERO_TABELAS=N_TAB;
-    CONTROL(db,CONTR);
-    return db;
-}
-
-bool INSERIR_REGISTRO(DATABASE *db, MEM_REGISTER REGISTER){
-    /*if(!db->OPEN){
-        cout("ERRO! O banco nao estah aberto");
-        return false;
-    }*/
-    fstream DBASE;
-    char BIT;
-    int p;
-    TABLE_HEADER *TABLE_H = new TABLE_HEADER;
-    TABLE *TABELA = new TABLE;
-    M_DADO *MDADO = new M_DADO;
-    REGISTRO *REG = new REGISTRO;
-    DBASE.open(db->NOME, fstream::in|fstream::out);
-    if(!DBASE.is_open()){
-        cout("Nao foi possivel assaltar o banco");
-        DBASE.close();
-        return false;
-    }
-    DBASE.read(cchar(&BIT), 1);
-    DBASE.read(cchar(&db->BASE_HEADER.NUMERO_TABELAS), sizeof(int));
-    DBASE.read(cchar(&db->TABELAS_HEADER_SEG), sizeof(SEGMENT));
-    DBASE.seekg(db->TABELAS_HEADER_SEG.BASE);
-    DBASE.read(cchar(TABLE_H), db->TABELAS_HEADER_SEG.LIMIT);
-    for(int i=0; i<db->BASE_HEADER.NUMERO_TABELAS; i++){
-        DBASE.seekg(TABLE_H->TABLE_POSITION.BASE);
-        DBASE.read(cchar(TABELA), TABLE_H->TABLE_POSITION.LIMIT);
-        DBASE.seekg(TABELA->META_TABLE_POSITION.BASE);
-        DBASE.read(cchar(&MDADO->NOME), sizeof(SEGMENT));
-        DBASE.read(cchar(&MDADO->TIPOS), sizeof(SEGMENT));
-        char ax[MDADO->NOME.LIMIT+1];
-        DBASE.seekg(MDADO->NOME.BASE);
-        DBASE.read(ax, MDADO->NOME.LIMIT);
-        ax[MDADO->NOME.LIMIT]='\0';
-        if(ax==REGISTER.nome) break;
-        DBASE.seekg(TABLE_H->NEXT.BASE);
-        DBASE.read(cchar(TABLE_H), TABLE_H->NEXT.LIMIT);
-    }
-    if(TABLE_H->NEXT.BASE==-1){
-        cout("ERRO! Tabela não encontrada");
-        DBASE.close();
-        return false;
-    }
-    MDADO->NOMES = new SEGMENT[TABLE_H->NUMERO_COLUNAS];
-    DBASE.seekg(TABELA->META_TABLE_POSITION.BASE+2*sizeof(SEGMENT));
-    DBASE.read(cchar(MDADO->NOMES), sizeof(SEGMENT)*TABLE_H->NUMERO_COLUNAS);
-    SEGMENT *SEG=Dallocar(&DBASE, sizeof(SEGMENT)*(TABLE_H->NUMERO_COLUNAS+1));
-    REG->DADOS=new SEGMENT[TABLE_H->NUMERO_COLUNAS];
-    if(TABELA->REGISTROS.BASE!=-1){
-        DBASE.seekg(TABELA->REGISTROS.BASE);
-        DBASE.read(cchar(REG->DADOS), TABLE_H->NUMERO_COLUNAS);
-        DBASE.read(cchar(&REG->NEXT), sizeof(SEGMENT));
-        while(REG->NEXT.BASE!=-1){
-            p=DBASE.tellg();
-            DBASE.read(cchar(REG->DADOS), TABLE_H->NUMERO_COLUNAS);
-            DBASE.read(cchar(&REG->NEXT), sizeof(SEGMENT));
-        }
-        REG->NEXT = *SEG;
-        DBASE.seekg(p+sizeof(SEGMENT)*TABLE_H->NUMERO_COLUNAS);
-        DBASE.write(cchar(&REG->NEXT), sizeof(SEGMENT));
-    }else{
-        TABELA->REGISTROS=*SEG;
-        DBASE.seekg(TABLE_H->TABLE_POSITION.BASE);
-        DBASE.write(cchar(TABELA), sizeof(TABLE));
-    }
-    REGISTRO ax;
-    ax.NEXT.BASE=-1;
-    ax.NEXT.LIMIT=-1;
-    ax.DADOS = new SEGMENT[TABLE_H->NUMERO_COLUNAS];
-    string *s=MDADO_TO_STRING(MDADO, TABLE_H->NUMERO_COLUNAS, &DBASE);
-    for(int i=0; i<(int) REGISTER.vars.size(); i++){
-        ax.DADOS[i].BASE=-1;
-        ax.DADOS[i].LIMIT=-1;
-        for(int j=0; j<TABLE_H->NUMERO_COLUNAS; j++){
-            if(s[j+1]==REGISTER.vars[i].nome){
-                SEGMENT SEG3 = *Dallocar(&DBASE, TSize(s[0][j]));
-                if(SEG3.BASE==-1) SEG3 = *Dallocar(&DBASE, (*cstring(REGISTER.vars[i].info)).size());
-                cout(SEG3.BASE);
-                cout(SEG3.LIMIT);
-                ax.DADOS[j]=SEG3;
-                DBASE.seekg(SEG3.BASE);
-                if(s[0][j]==STRING) DBASE.write((*cstring(REGISTER.vars[j].info)).c_str(), SEG3.LIMIT);
-                else DBASE.write(cchar(REGISTER.vars[j].info), SEG3.LIMIT);
-            }
-        }
-    }
-    DBASE.seekg(SEG->BASE);
-    DBASE.write(cchar(ax.DADOS), sizeof(SEGMENT)*TABLE_H->NUMERO_COLUNAS);
-    DBASE.write(cchar(&ax.NEXT), sizeof(SEGMENT));
-    DBASE.close();
-    return true;
+int TSize(char TIPO){
+    if(TIPO==INT) return sizeof(int);
+    else if(TIPO==CHAR) return sizeof(char);
+    else if(TIPO==FLOAT) return sizeof(float);
+    else if(TIPO==DOUBLE) return sizeof(double);
+    else return -1;
 }
 
 SEGMENT *Dallocar(fstream *f, int TAM){
+    //Aloca um espaço no final do arquivo
     SEGMENT *S = new SEGMENT;
     if(TAM>0){
         char lixo[TAM];
@@ -432,50 +340,55 @@ SEGMENT *Dallocar(fstream *f, int TAM){
     return S;
 }
 
-int TSize(char TIPO){
-    if(TIPO==INT) return sizeof(int);
-    else if(TIPO==CHAR) return sizeof(char);
-    else if(TIPO==FLOAT) return sizeof(float);
-    else if(TIPO==DOUBLE) return sizeof(double);
-    else return -1;
+bool GET_BLOCK(fstream *f, char *p, SEGMENT S){
+    if(S.BASE==-1) return false;
+    (*f).seekg(S.BASE);
+    (*f).read(p, S.LIMIT);
+    return true;
 }
 
-
-fstream *OPEN_DATABASE(DATABASE *db, string nome){
-    char BIT;
-    fstream  *DBASE=new fstream;
-    (*DBASE).open(db->NOME, fstream::in);
-    if(!(*DBASE).is_open()){
-        cout("Nao fo pssivel abrir o banco");
-        return nullptr;
-    }
-    (*DBASE).read(cchar(&BIT), 1);
-    if(BIT!=BIT_PROTETOR){
-        cout("ERRO! Este arquivo nao e valido");
-        return nullptr;
-    }
-    (*DBASE).read(cchar(&db->BASE_HEADER.NUMERO_TABELAS), sizeof(int));
-    (*DBASE).read(cchar(&db->TABELAS_HEADER_SEG), sizeof(SEGMENT));
-    return DBASE;
+void *Malocar(char TIPO){
+    if(TIPO == INT) return new int;
+    else if(TIPO == FLOAT) return new float;
+    else if(TIPO == DOUBLE) return new double;
+    else if(TIPO == CHAR) return new char;
+    else if(TIPO == STRING) return new string;
+    else return nullptr;
 }
 
-string *MDADO_TO_STRING(M_DADO *M, int TAM, fstream *f){
-    string *s = new string[TAM+1];
-    char ax[M->TIPOS.LIMIT+1];
-    (*f).seekg(M->TIPOS.BASE);
-    (*f).read(ax, M->TIPOS.LIMIT);
-    ax[M->TIPOS.LIMIT]='\0';
-    s[0]=ax;
-    for(int i=0; i<TAM; i++){
-        char ax[M->NOMES[i].LIMIT+1];
-        (*f).seekg(M->NOMES[i].BASE);
-        (*f).read(ax, M->NOMES[i].LIMIT);
-        ax[M->NOMES[i].LIMIT]='\0';
-        s[i+1] = ax;
-
-    }
-    return s;
+bool COMPARAR(void *p, void *p2, char TIPO){
+    if(TIPO == INT) return *cint(p)==*cint(p2);
+    else if(TIPO == FLOAT) return *cfloat(p)==*cfloat(p2);
+    else if(TIPO == DOUBLE) return *cdouble(p)==*cdouble(p2);
+    else if(TIPO == CHAR) return *cchar(p)==*cchar(p2);
+    else if(TIPO == STRING) return *cstring(p)==*cstring(p2);
+    cout("Tipo informado errado");
+    return false;
 }
+
+void IMPRIMIR_MR(vector<MEM_REGISTER> *v, string md){
+    for(unsigned int i=0; i<(*v).size(); i++){
+        for(unsigned int j=0; j<md.size(); j++){
+            if(md[j] == INT){
+                cout((*v)[i].vars[j].nome<<" : "<<*cint((*v)[i].vars[j].info));
+            }
+            else if(md[j] == FLOAT) {
+                cout((*v)[i].vars[j].nome<<" : "<<*cfloat((*v)[i].vars[j].info));
+            }
+            else if(md[j] == DOUBLE) {
+                cout((*v)[i].vars[j].nome<<" : "<<*cdouble((*v)[i].vars[j].info));
+            }
+            else if(md[j] == CHAR) {
+                cout((*v)[i].vars[j].nome<<" : "<<*cchar((*v)[i].vars[j].info));
+            }
+            else if(md[j] == STRING) {
+                cout((*v)[i].vars[j].nome<<" : "<<*cstring((*v)[i].vars[j].info));
+            }
+        }
+        cout("\n\n\n");
+    }
+}
+//=======================================================================================================
 
 bool CONTROL(DATABASE *db, vector<string>CONTR[]){
     fstream DBASE;
@@ -549,4 +462,309 @@ bool CONTROL(DATABASE *db, vector<string>CONTR[]){
     }
     DBASE.close();
     return true;
+}
+
+string *MDADO_TO_STRING(M_DADO *M, int TAM, fstream *f){
+    /*
+        retorna os tipos ("s,i,s"); [0]
+        e os nomes das variaveis. [1...TAM];
+    */
+    string *s = new string[TAM+1];
+    char ax[M->TIPOS.LIMIT+1];
+    GET_BLOCK(f, ax, M->TIPOS);
+    ax[M->TIPOS.LIMIT]='\0';
+    s[0]=ax;
+    for(int i=0; i<TAM; i++){
+        char ax[M->NOMES[i].LIMIT+1];
+        (*f).seekg(M->NOMES[i].BASE);
+        (*f).read(ax, M->NOMES[i].LIMIT);
+        ax[M->NOMES[i].LIMIT]='\0';
+        s[i+1] = ax;
+
+    }
+    return s;
+}
+
+bool LER_TABLE_HEADER(fstream *f, TABLE_HEADER *TH, SEGMENT POS){
+    if(!GET_BLOCK(f, cchar(TH), POS)){
+        cout("Tabela inesistente");
+        return false;
+    }
+    return true;
+}
+
+bool LER_TABELA(fstream *f, TABLE *T, SEGMENT POS){
+    if(!GET_BLOCK(f, cchar(T), POS)){
+        cout("Ocorreu um erro ao buscar a tabela");
+        return false;
+    }
+    return true;
+}
+
+bool LER_MDADO(fstream *f, M_DADO *M, TABLE_HEADER *TH, SEGMENT POS){
+    SEGMENT SEG;
+    SEG.BASE = POS.BASE;
+    SEG.LIMIT=sizeof(SEGMENT);
+    if(!GET_BLOCK(f, cchar(&M->NOME), SEG)){
+        cout("Ocorreu um erro");
+        return false;
+    }
+    SEG.BASE+=sizeof(SEGMENT);
+    if(!GET_BLOCK(f, cchar(&M->TIPOS), SEG)){
+        cout("Ocorreu um erro");
+        return false;
+    }
+    M->NOMES = new SEGMENT[TH->NUMERO_COLUNAS];
+    SEG.BASE += sizeof(SEGMENT);
+    SEG.LIMIT = sizeof(SEGMENT)*TH->NUMERO_COLUNAS;
+    if(!GET_BLOCK(f, cchar(M->NOMES), SEG)){
+        cout("Ocorreu um erro");
+        return false;
+    }
+    return true;
+}
+
+bool LER_REGISTRO(fstream *f, REGISTRO *R, TABLE_HEADER *TH, SEGMENT POS){
+    R->DADOS = new SEGMENT[TH->NUMERO_COLUNAS];
+    POS.LIMIT-=sizeof(SEGMENT);
+    if(!GET_BLOCK(f, cchar(R->DADOS), POS)){
+        cout("Ocorreu um erro ao ler o registro");
+        return false;
+    }
+    POS.BASE += POS.LIMIT;
+    POS.LIMIT = sizeof(SEGMENT);
+    if(!GET_BLOCK(f, cchar(&R->NEXT), POS)){
+        cout("Ocorreu um erro ao ler o registro");
+        return false;
+    }
+    return true;
+}
+
+bool RtoMR(fstream *f, string *s, REGISTRO *R, MEM_REGISTER *MR){
+    node n;
+    for(unsigned int i=0; i<s[0].size(); i++){
+        n.nome = s[i+1];
+        n.info = Malocar(s[0][i]);
+        if(s[0][i]=='s'){
+            (*cstring(n.info)).resize(R->DADOS[i].LIMIT+1);
+            if(!GET_BLOCK(f, cchar((*cstring(n.info)).c_str()), R->DADOS[i])){
+                cout("Ocorreu um erro ao transformar o registro");
+                return false;
+            }
+        }
+        else if(!GET_BLOCK(f, cchar(n.info), R->DADOS[i])){
+            cout("Ocorreu um erro ao transformar o registro");
+            return false;
+        }
+        MR->vars.push_back(n);
+    }
+    return true;
+}
+//=======================================================================================================
+DATABASE *CRIAR_DATABASE(string NOME, vector<string>CONTR[], int N_TAB){
+    DATABASE *db=new DATABASE;
+    db->NOME=NOME;
+    db->BASE_HEADER.NUMERO_TABELAS=N_TAB;
+    CONTROL(db,CONTR);
+    return db;
+}
+
+bool INSERIR_REGISTRO(DATABASE *db, MEM_REGISTER REGISTER){
+    /*if(!db->OPEN){
+        cout("ERRO! O banco nao estah aberto");
+        return false;
+    }*/
+    fstream DBASE;
+    SEGMENT SH;
+    char BIT;
+    int p=0;
+    TABLE_HEADER *TABLE_H = new TABLE_HEADER;
+    TABLE *TABELA = new TABLE;
+    M_DADO *MDADO = new M_DADO;
+    REGISTRO *REG = new REGISTRO;
+    DBASE.open(db->NOME, fstream::in|fstream::out);
+    if(!DBASE.is_open()){
+        cout("Nao foi possivel assaltar o banco");
+        DBASE.close();
+        return false;
+    }
+    DBASE.read(cchar(&BIT), 1);
+    DBASE.read(cchar(&db->BASE_HEADER.NUMERO_TABELAS), sizeof(int));
+    DBASE.read(cchar(&db->TABELAS_HEADER_SEG), sizeof(SEGMENT));
+    DBASE.seekg(db->TABELAS_HEADER_SEG.BASE);
+    DBASE.read(cchar(TABLE_H), db->TABELAS_HEADER_SEG.LIMIT);
+    SH=db->TABELAS_HEADER_SEG;
+    for(int i=0; i<db->BASE_HEADER.NUMERO_TABELAS; i++){
+        DBASE.seekg(TABLE_H->TABLE_POSITION.BASE);
+        DBASE.read(cchar(TABELA), TABLE_H->TABLE_POSITION.LIMIT);
+        DBASE.seekg(TABELA->META_TABLE_POSITION.BASE);
+        DBASE.read(cchar(&MDADO->NOME), sizeof(SEGMENT));
+        DBASE.read(cchar(&MDADO->TIPOS), sizeof(SEGMENT));
+        char ax[MDADO->NOME.LIMIT+1];
+        DBASE.seekg(MDADO->NOME.BASE);
+        DBASE.read(ax, MDADO->NOME.LIMIT);
+        ax[MDADO->NOME.LIMIT]='\0';
+        if(ax==REGISTER.nome) break;
+        DBASE.seekg(TABLE_H->NEXT.BASE);
+        SH=TABLE_H->NEXT;
+        DBASE.read(cchar(TABLE_H), TABLE_H->NEXT.LIMIT);
+    }
+    if(TABLE_H->NEXT.BASE==-1){
+        cout("ERRO! Tabela não encontrada");
+        DBASE.close();
+        return false;
+    }
+    MDADO->NOMES = new SEGMENT[TABLE_H->NUMERO_COLUNAS];
+    DBASE.seekg(TABELA->META_TABLE_POSITION.BASE+2*sizeof(SEGMENT));
+    DBASE.read(cchar(MDADO->NOMES), sizeof(SEGMENT)*TABLE_H->NUMERO_COLUNAS);
+    SEGMENT *SEG=Dallocar(&DBASE, sizeof(SEGMENT)*(TABLE_H->NUMERO_COLUNAS+1));
+
+    REG->DADOS=new SEGMENT[TABLE_H->NUMERO_COLUNAS];
+    if(TABELA->REGISTROS.BASE!=-1){
+        DBASE.seekg(TABELA->REGISTROS.BASE);
+        DBASE.read(cchar(REG->DADOS), sizeof(SEGMENT)*TABLE_H->NUMERO_COLUNAS);
+        p=DBASE.tellg();
+        DBASE.read(cchar(&REG->NEXT), sizeof(SEGMENT));
+        while(REG->NEXT.BASE!=-1){
+            DBASE.seekg(REG->NEXT.BASE);
+            DBASE.read(cchar(REG->DADOS), sizeof(SEGMENT)*TABLE_H->NUMERO_COLUNAS);
+            p=DBASE.tellg();
+            DBASE.read(cchar(&REG->NEXT), sizeof(SEGMENT));
+        }
+        REG->NEXT = *SEG;
+        DBASE.seekg(p);
+        DBASE.write(cchar(&REG->NEXT), sizeof(SEGMENT));
+        TABLE_H->NUMERO_REGISTROS++;
+        DBASE.seekg(SH.BASE);
+        DBASE.write(cchar(TABLE_H), SH.LIMIT);
+    }
+    else{
+        TABELA->REGISTROS=*SEG;
+        DBASE.seekg(TABLE_H->TABLE_POSITION.BASE);
+        DBASE.write(cchar(TABELA), sizeof(TABLE));
+        TABLE_H->NUMERO_REGISTROS++;
+        DBASE.seekg(SH.BASE);
+        DBASE.write(cchar(TABLE_H), SH.LIMIT);
+    }
+    REGISTRO ax;
+    ax.NEXT.BASE=-1;
+    ax.NEXT.LIMIT=-1;
+    ax.DADOS = new SEGMENT[TABLE_H->NUMERO_COLUNAS];
+    string *s=MDADO_TO_STRING(MDADO, TABLE_H->NUMERO_COLUNAS, &DBASE);
+    for(int i=0; i<(int) REGISTER.vars.size(); i++){
+        ax.DADOS[i].BASE=-1;
+        ax.DADOS[i].LIMIT=-1;
+        for(int j=0; j<TABLE_H->NUMERO_COLUNAS; j++){
+            if(s[j+1]==REGISTER.vars[i].nome){
+                SEGMENT SEG3 = *Dallocar(&DBASE, TSize(s[0][j]));
+                if(SEG3.BASE==-1) SEG3 = *Dallocar(&DBASE, (*cstring(REGISTER.vars[i].info)).size());
+                ax.DADOS[j]=SEG3;
+                DBASE.seekg(SEG3.BASE);
+                if(s[0][j]==STRING) DBASE.write((*cstring(REGISTER.vars[j].info)).c_str(), SEG3.LIMIT);
+                else DBASE.write(cchar(REGISTER.vars[j].info), SEG3.LIMIT);
+            }
+        }
+    }
+    DBASE.seekg(SEG->BASE);
+    DBASE.write(cchar(ax.DADOS), sizeof(SEGMENT)*TABLE_H->NUMERO_COLUNAS);
+    DBASE.write(cchar(&ax.NEXT), sizeof(SEGMENT));
+    DBASE.close();
+    delete SEG;
+    return true;
+}
+
+vector<MEM_REGISTER> PEGAR_REGISTRO(DATABASE *db, string CONTROLE[3], void **p){
+    /*
+        CONTROLE[0] -> Nome da tabela
+        Se CONTROLE[1] for "ID" então devo retornar o CONTROLE[2] ésimo registro
+        Caso não, será o nome da variavel que tem que ser igual a *p
+        Se CONTROLE[1] for "*" Deve retornar todos os registros
+    */
+    fstream *DBASE;
+    REGISTRO R;
+    vector<MEM_REGISTER> MRL;
+    TABLE_HEADER TH;
+    TABLE TABELA;
+    M_DADO MDADO;
+    DBASE=OPEN_DATABASE(db);
+    if(DBASE==nullptr){
+        cout("Erro ao abrir banco de dados");
+        return MRL;
+    }
+    if(!LER_TABLE_HEADER(DBASE, &TH, db->TABELAS_HEADER_SEG)) return MRL;
+    if(CONTROLE[1]=="ID") if(stoi(CONTROLE[2])>TH.NUMERO_REGISTROS) return MRL;
+    if(!LER_TABELA(DBASE, &TABELA, TH.TABLE_POSITION)) return MRL;
+    while(true){
+        if(!LER_MDADO(DBASE, &MDADO, &TH, TABELA.META_TABLE_POSITION)) return MRL;
+        char s[MDADO.NOME.LIMIT+1];
+        if(!GET_BLOCK(DBASE, s, MDADO.NOME));
+        s[MDADO.NOME.LIMIT]='\0';
+        string ax=s;
+        if(ax==CONTROLE[0]) break;
+        if(TH.NEXT.BASE==-1) return MRL;
+        if(!(LER_TABLE_HEADER(DBASE, &TH, TH.NEXT)&&LER_TABELA(DBASE, &TABELA, TH.TABLE_POSITION))) return MRL;
+    }
+    string *s=MDADO_TO_STRING(&MDADO, TH.NUMERO_COLUNAS, DBASE);
+    MEM_REGISTER MR;
+    if(CONTROLE[1]=="ID"){
+        int n=stoi(CONTROLE[2]);
+        LER_REGISTRO(DBASE, &R, &TH, TABELA.REGISTROS);
+        for(int i=1; i<n;i++) LER_REGISTRO(DBASE, &R, &TH, R.NEXT);
+        if(!RtoMR(DBASE, s, &R, &MR)) return MRL;
+        MRL.push_back(MR);
+    }else if(CONTROLE[1]=="*"){
+        if(!LER_REGISTRO(DBASE, &R, &TH, TABELA.REGISTROS)) return MRL;
+        for(int i=0; i<TH.NUMERO_REGISTROS; i++){
+            if(!RtoMR(DBASE, s, &R, &MR)) return MRL;
+            cout(R.NEXT.BASE);
+            MRL.push_back(MR);
+            if(!LER_REGISTRO(DBASE, &R, &TH, R.NEXT)) break;
+            MR.vars.clear();
+        }
+    }
+    else if(*p!=nullptr){
+        int n;
+        for(n=1; n<=TH.NUMERO_COLUNAS; n++) if(s[n]==CONTROLE[1]) break;
+        if(n>TH.NUMERO_COLUNAS) return MRL;
+        if(!LER_REGISTRO(DBASE, &R, &TH, TABELA.REGISTROS)) return MRL;
+        for(int i=0; i<TH.NUMERO_REGISTROS;i++){
+            if(!RtoMR(DBASE, s, &R, &MR)) return MRL;
+            if(COMPARAR(MR.vars[n-1].info, *p, s[0][n-1])) MRL.push_back(MR);
+            if(!LER_REGISTRO(DBASE, &R, &TH, TABELA.REGISTROS)) return MRL;
+        }
+    }
+    *p=Malocar('s');
+    *cstring(*p)=s[0];
+    (*DBASE).close();
+    delete DBASE;
+    delete[] s;
+    delete[] MDADO.NOMES;
+    delete[] R.DADOS;
+    return MRL;
+}
+
+fstream *OPEN_DATABASE(DATABASE *db){
+    char BIT;
+    fstream  *DBASE=new fstream;
+    if(!ABRIR_ARQUIVO(DBASE, db->NOME, ENTRADA_SAIDA)){
+        cout("Nao fo possivel abrir o banco");
+        delete DBASE;
+        return nullptr;
+    }
+    (*DBASE).read(cchar(&BIT), 1);
+    if(BIT!=BIT_PROTETOR){
+        cout("ERRO! Este arquivo nao e valido");
+        delete DBASE;
+        return nullptr;
+    }
+    (*DBASE).read(cchar(&db->BASE_HEADER.NUMERO_TABELAS), sizeof(int));
+    (*DBASE).read(cchar(&db->TABELAS_HEADER_SEG), sizeof(SEGMENT));
+    return DBASE;
+}
+
+bool ABRIR_ARQUIVO(fstream *f, string NOME,char TIPO_ABERTURA){
+    if(TIPO_ABERTURA == ENTRADA) (*f).open(NOME, fstream::in);
+    else if(TIPO_ABERTURA == SAIDA) (*f).open(NOME, fstream::out);
+    else if(TIPO_ABERTURA == ENTRADA_SAIDA) (*f).open(NOME, fstream::in|fstream::out);
+    return (*f).is_open();
 }

@@ -20,6 +20,9 @@
 #define CHAR 'c'
 #define STRING 's'
 #define BIT_PROTETOR 'û'
+#define ENTRADA 'I'
+#define SAIDA 'O'
+#define ENTRADA_SAIDA 'Î'
 
 using namespace std;
 //=============================================================================================
@@ -111,10 +114,21 @@ typedef struct{
 bool CONTROL(DATABASE *, vector<string>[]);
 DATABASE *CRIAR_DATABASE(string, vector<string>[], int);
 bool INSERIR_REGISTRO(DATABASE *, MEM_REGISTER);
+bool LER_TABLE_HEADER(fstream *, TABLE_HEADER *, SEGMENT);
+bool LER_TABELA(fstream *, TABLE *, SEGMENT);
+bool LER_MDADO(fstream *, M_DADO *, TABLE_HEADER *, SEGMENT);
+bool LER_REGISTRO(fstream *, REGISTRO *, TABLE_HEADER *, SEGMENT);
+bool RtoMR(fstream *, string *, REGISTRO *, MEM_REGISTER *);
+vector<MEM_REGISTER> PEGAR_REGISTRO(DATABASE *, string [3], void **);
 string *MDADO_TO_STRING(M_DADO *, int, fstream *);
+fstream *OPEN_DATABASE (DATABASE *);
 SEGMENT *Dallocar(fstream *, int);
 int TSize(char);
-
+bool GET_BLOCK(fstream *, char *, SEGMENT);
+void *Malocar(char);
+void IMPRIMIR_MR(vector<MEM_REGISTER> *, string);
+bool COMPARAR(void *, void *, char);
+bool ABRIR_ARQUIVO(fstream *, string, char);
 //=================================================================================
 void ImprimeMenu();
 void ImprimeTabela(tabela *);
