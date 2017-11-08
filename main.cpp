@@ -19,10 +19,8 @@ int main()
     c[1].push_back("Nome");
     c[1].push_back("Marca");
     c[1].push_back("Preco");
-    CRIAR_DATABASE("TESTE",c,2);
+    CRIAR_DATABASE("teste.mydb",c,2);
     //*/
-    //parte concluida
-
 
     /*
     node ax;
@@ -35,14 +33,14 @@ int main()
     R.vars.push_back(ax);
     ax.info=new string;
     ax.nome="Matricula";
-    *cstring(ax.info)="321654987";
+    *cstring(ax.info)="987654321";
     R.vars.push_back(ax);
     ax.info = new int;
     ax.nome = "Idade";
     *cint(ax.info) = 24;
     R.vars.push_back(ax);
 
-    db.NOME="TESTE";
+    db.NOME="teste.mydb";
     INSERIR_REGISTRO(&db, R);
 
 
@@ -53,12 +51,15 @@ int main()
     DATABASE db;
     string s[3];
     void *p=nullptr;
-    db.NOME="TESTE";
+    db.NOME="teste.mydb";
     s[0]="Alunos";
     s[1]="*";
+    s[2]="";
+    //p = Malocar(STRING);
+    //*cstring(p)="Pedro";
     vector<MEM_REGISTER> v=PEGAR_REGISTRO(&db, s, &p);
     IMPRIMIR_MR(&v, *cstring(p));
-    delete cstring(p);
+    //delete cstring(p);
     return 0;
     //*/
 }

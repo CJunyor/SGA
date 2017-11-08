@@ -26,38 +26,6 @@
 
 using namespace std;
 //=============================================================================================
-/*
-typedef struct MTD;
-typedef struct no;
-typedef struct tabela;
-
-//=============================================================================================
-typedef struct SEGMENT;
-typedef struct TABLE_HEADER;
-typedef struct DATABASE_HEADER;
-typedef struct M_DADO;
-typedef struct REGISTRO;
-typedef struct TABLE;
-typedef struct DATABASE;
-*/
-//=============================================================================================
-typedef struct{
-    char tipo;
-    string nome;
-}MTD;
-
-typedef struct{
-    MTD dado;
-    vector<void*>info;
-}no;
-
-typedef struct{
-    string nome;
-    list<no>colunas;
-    int idmax;
-}tabela;
-
-//=============================================================================================
 
 typedef struct{
     string nome;
@@ -112,32 +80,37 @@ typedef struct{
 
 //=================================================================================
 bool CONTROL(DATABASE *, vector<string>[]);
-DATABASE *CRIAR_DATABASE(string, vector<string>[], int);
+bool CRIAR_DATABASE(string, vector<string>[], int);
+bool FILL_TABLE_HEADER(fstream *, TABLE_HEADER *, int);
+bool FILL_TABLE(fstream *, TABLE *, TABLE_HEADER *);
+bool FILL_MDADO(fstream *, M_DADO *, TABLE_HEADER *, vector<string> *);
+bool SET_BLOCK(fstream *, char *, SEGMENT);
+bool SET_DB_HEADER(fstream *, DATABASE *);
+bool SET_TABLE_HEADER(fstream *, TABLE_HEADER *, SEGMENT);
+bool SET_TABLE(fstream *, TABLE *, SEGMENT);
+bool SET_MDADO(fstream *, M_DADO *, TABLE_HEADER *,SEGMENT);
 bool INSERIR_REGISTRO(DATABASE *, MEM_REGISTER);
 bool LER_TABLE_HEADER(fstream *, TABLE_HEADER *, SEGMENT);
 bool LER_TABELA(fstream *, TABLE *, SEGMENT);
 bool LER_MDADO(fstream *, M_DADO *, TABLE_HEADER *, SEGMENT);
 bool LER_REGISTRO(fstream *, REGISTRO *, TABLE_HEADER *, SEGMENT);
 bool RtoMR(fstream *, string *, REGISTRO *, MEM_REGISTER *);
+
 vector<MEM_REGISTER> PEGAR_REGISTRO(DATABASE *, string [3], void **);
-string *MDADO_TO_STRING(M_DADO *, int, fstream *);
+bool MDADO_TO_STRING(M_DADO *, int, fstream *);
 fstream *OPEN_DATABASE (DATABASE *);
-SEGMENT *Dallocar(fstream *, int);
+SEGMENT Dallocar(fstream *, int);
 int TSize(char);
 bool GET_BLOCK(fstream *, char *, SEGMENT);
 void *Malocar(char);
 void IMPRIMIR_MR(vector<MEM_REGISTER> *, string);
 bool COMPARAR(void *, void *, char);
 bool ABRIR_ARQUIVO(fstream *, string, char);
+bool VALID_SEG(SEGMENT);
 //=================================================================================
 void ImprimeMenu();
-void ImprimeTabela(tabela *);
-void *Mallocar(char, void*);
-void CriarTabela(tabela *);
-void Atribuir(tabela *);
-void Salvar(tabela *);
-int Abrir(tabela *);
-int Iniciar(tabela *);
-int SubMenu(tabela *);
 void ImprimeSubMenu();
-int DSize(no *);
+void *Mallocar(char, void*);
+void *Alloc(char);
+void Desaloc(char, void *);
+
