@@ -29,15 +29,15 @@ int main()
     R.nome="Alunos";
     ax.info=new string;
     ax.nome="Nome";
-    *cstring(ax.info)="Diego";
+    *cstring(ax.info)="Candido";
     R.vars.push_back(ax);
     ax.info=new string;
     ax.nome="Matricula";
-    *cstring(ax.info)="987654321";
+    *cstring(ax.info)="123456789";
     R.vars.push_back(ax);
     ax.info = new int;
     ax.nome = "Idade";
-    *cint(ax.info) = 24;
+    *cint(ax.info) = 19;
     R.vars.push_back(ax);
 
     db.NOME="teste.mydb";
@@ -55,8 +55,8 @@ int main()
     s[0]="Alunos";
     s[1]="*";
     s[2]="";
-    //p = Malocar(STRING);
-    //*cstring(p)="Pedro";
+    p = Malocar(STRING);
+    *cstring(p)="Pedro";
     vector<MEM_REGISTER> v=PEGAR_REGISTRO(&db, s, &p);
     IMPRIMIR_MR(&v, *cstring(p));
     //delete cstring(p);
