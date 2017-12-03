@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "Btree.h"
+#include "BTree.h"
 
 
 BTree criarNo(){
@@ -9,7 +9,7 @@ BTree criarNo(){
 
     for (i=0; i<MAXFILHOS-1; i++){
         aux->filhos[i]=NULL;
-        aux->valido[i]=false;
+        aux->valido[i]=0;
     }
 
     aux->preenchidos=0;
@@ -87,8 +87,8 @@ void  insereChave(BTree raiz, indice info, BTree filhodir)
   pos = buscaBin(raiz, raiz->preenchidos, info.n);
   k = raiz->preenchidos;
 
-  if (raiz->valido[pos]==false && raiz->chave[pos].n == info.n){
-    raiz->valido[pos]=true;
+  if (raiz->valido[pos]==0 && raiz->chave[pos].n == info.n){
+    raiz->valido[pos]=1;
     return;
   }else{
     //realiza o remanejamento para manter as chaves ordenadas
@@ -100,14 +100,14 @@ void  insereChave(BTree raiz, indice info, BTree filhodir)
     }
     //insere a chave na posição ideal
     raiz->chave[pos].n = info.n;
-    raiz->valido[pos]=true;
+    raiz->valido[pos]=1;
     raiz->filhos[pos+1] = filhodir;
     raiz->preenchidos++;
     }
 }
 
 
-BTree Insercao(BTree raiz, indice chave, bool *flag, indice *retorno)
+BTree Insercao(BTree raiz, indice chave, int *flag, indice *retorno)
 {
   indice info_mediano; //auxiliar para armazenar a chave que irá subir para o pai
   int i, pos;
@@ -116,7 +116,7 @@ BTree Insercao(BTree raiz, indice chave, bool *flag, indice *retorno)
   if (raiz == NULL)
    {
      //O nó anterior é o ideal para inserir a nova chave (chegou em um nó folha)
-     *flag = true;
+     *flag = 1;
      *retorno = chave;
      return(NULL);
    }
@@ -125,7 +125,7 @@ BTree Insercao(BTree raiz, indice chave, bool *flag, indice *retorno)
          if (raiz->preenchidos > pos && raiz->chave[pos].n == chave.n)
            {
              printf("Chave já contida na Árvore");
-             *flag = false;
+             *flag = 0;
            }
          else {
                                //desce na árvore até encontrar o nó folha para inserir a chave.
@@ -135,7 +135,7 @@ BTree Insercao(BTree raiz, indice chave, bool *flag, indice *retorno)
                      if (raiz->preenchidos < CHEIA) //Tem espaço na página
                      {
                        insereChave(raiz, *retorno, filho_dir);
-                       *flag = false;
+                       *flag = 0;
                      }
                    else {
                           temp = criarNo();
@@ -166,11 +166,12 @@ BTree Insercao(BTree raiz, indice chave, bool *flag, indice *retorno)
                  }
               }
      }
+    return (raiz);
 }
 
 BTree Insere(BTree no, indice v)
 {
-  bool flag;
+  int flag;
   int  i;
   indice retorno;
   BTree filho_dir, buffer;
@@ -208,7 +209,6 @@ BTree buscaChave(BTree raiz, int chave, int *position)
         buffer = buffer->filhos[pos];
      }
    }
-  return(NULL);
 }
 
 void em_ordem(BTree raiz)

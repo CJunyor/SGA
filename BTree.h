@@ -6,10 +6,7 @@
 #define MAXFILHOS 31
 #define MIN_OCUP 15
 
-#define false 0
-#define true 1
 
-typedef int bool;
 
 typedef struct{
     int BASE;
@@ -25,7 +22,7 @@ typedef struct NoArv{
     int preenchidos;
     indice chave[CHEIA];
     struct NoArv *filhos[MAXFILHOS];
-    bool valido[CHEIA];
+    int valido[CHEIA];
 }NoArv, *BTree;
 
 BTree criarNo();
@@ -41,7 +38,7 @@ int buscaBin(BTree vetor, int preenchidos, int chave);
 void  insereChave(BTree raiz, indice info, BTree filhodir);
 // Dado um nó da BTree, insere o indice nesse nó.
 
-BTree Insercao(BTree raiz, indice chave, bool *flag, indice *retorno);
+BTree Insercao(BTree raiz, indice chave, int *flag, indice *retorno);
 // Função intermediária para inserção.
 // Insere um nó na BTree, procurando primeiramente qual o nó ideal para se inserir, ou dividindo o nó em dois
 // caso se faça necessário. flag informa se existe se ainda existe a necessidade de inserção, essa informação é usada
