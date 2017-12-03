@@ -87,29 +87,28 @@ void  insereChave(BTree raiz, indice info, BTree filhodir)
   pos = buscaBin(raiz, raiz->preenchidos, info.n);
   k = raiz->preenchidos;
 
-  if (raiz->valido[pos]==0 && raiz->chave[pos].n == info.n){
-    raiz->valido[pos]=1;
-    return;
-  }else{
+
     //realiza o remanejamento para manter as chaves ordenadas
     while (k > pos && info.n < raiz->chave[k-1].n)
     {
         raiz->chave[k].n = raiz->chave[k-1].n;
+        raiz->chave[k].seek = raiz->chave[k-1].seek;
         raiz->filhos[k+1] = raiz->filhos[k];
         k--;
     }
     //insere a chave na posição ideal
     raiz->chave[pos].n = info.n;
+    raiz->chave[pos].seek = info.seek;
     raiz->valido[pos]=1;
     raiz->filhos[pos+1] = filhodir;
     raiz->preenchidos++;
-    }
+
 }
 
 
 BTree Insercao(BTree raiz, indice chave, int *flag, indice *retorno)
 {
-    //printf("\n%d\n", chave.seek.BASE)
+    //printf("\n%d\n", chave.seek.BASE);
   indice info_mediano; //auxiliar para armazenar a chave que irá subir para o pai
   int i, pos;
       BTree temp, filho_dir; //ponteiro para o filho à direita da chave
@@ -126,22 +125,28 @@ BTree Insercao(BTree raiz, indice chave, int *flag, indice *retorno)
          pos = buscaBin(raiz, raiz->preenchidos, chave.n);
          if (raiz->preenchidos > pos && raiz->chave[pos].n == chave.n)
            {
+             //  printf("\n%d\n", chave.seek.BASE);
              printf("Chave já contida na Árvore");
              *flag = 0;
            }
          else {
                                //desce na árvore até encontrar o nó folha para inserir a chave.
                filho_dir = Insercao(raiz->filhos[pos],chave,flag,retorno);
+               //printf("\n%d\n", (*retorno).seek.BASE);
                if (*flag) //Se true deve inserir a info_retorno no nó.
                  {
+                     //printf("\n%d\n", (*retorno).seek.BASE);
                      if (raiz->preenchidos < CHEIA) //Tem espaço na página
                      {
                        insereChave(raiz, *retorno, filho_dir);
                        *flag = 0;
                      }
                    else {
+                        //printf("\n%d\n", raiz->chave[0]);
                           temp = criarNo();
-                         info_mediano.n = raiz->chave[MIN_OCUP].n;
+                          //printf("\n%d\n", raiz->chave[3].seek.LIMIT);
+                         info_mediano = raiz->chave[MIN_OCUP];
+                         //printf("\n%d\n", info_mediano.seek.BASE);
 
                          //insere metade do nó raiz no temp (efetua subdivisão)
                          temp->filhos[0] = raiz->filhos[MIN_OCUP+1];
@@ -173,6 +178,7 @@ BTree Insercao(BTree raiz, indice chave, int *flag, indice *retorno)
 
 BTree Insere(BTree no, indice v)
 {
+
   int flag;
   int  i;
   indice retorno;
