@@ -7,8 +7,9 @@ BTree criarNo(){
     BTree aux = (BTree)malloc(sizeof(NoArv));
     int i=0;
 
-    for (i=0; i<MAXFILHOS; i++){
+    for (i=0; i<MAXFILHOS-1; i++){
         aux->filhos[i]=NULL;
+        aux->valido[i]=false;
     }
 
     aux->preenchidos=0;
@@ -27,12 +28,13 @@ void carregaBTree(char nome[], BTree *raiz, SEGMENT area){
     fseek(fp, area.BASE, SEEK_SET);
     while(ftell(fp)<=area.LIMIT+area.BASE){
         fread(&buffer, sizeof(indice), 1, fp);
-        Insere(*raiz, buffer);
+        if (buffer.seek.BASE != -1)
+            Insere(*raiz, buffer);
     }
     fclose(fp);
 }
 
-int buscaBin(indice vetor[], int preenchidos, int chave){
+int buscaBin(BTree vetor, int preenchidos, int chave){
     int inicio;
     int fim;
     int metade;
@@ -43,9 +45,9 @@ int buscaBin(indice vetor[], int preenchidos, int chave){
     while (inicio<=fim){
         metade = (inicio+fim)/2;
 
-        if (vetor[metade].n==chave){
+        if (vetor->chave[metade].n==chave){
             return metade;
-        }else if(vetor[metade].n>chave){
+        }else if(vetor->chave[metade].n>chave){
             fim = metade-1;
         }
         else{
@@ -82,20 +84,26 @@ void  insereChave(BTree raiz, indice info, BTree filhodir)
   int k, pos;
 
   //busca para obter a posição ideal para inserir a nova chave
-  pos = buscaBin(raiz->chave, raiz->preenchidos, info.n);
+  pos = buscaBin(raiz, raiz->preenchidos, info.n);
   k = raiz->preenchidos;
 
-  //realiza o remanejamento para manter as chaves ordenadas
-  while (k > pos && info.n < raiz->chave[k-1].n)
-  {
-    raiz->chave[k].n = raiz->chave[k-1].n;
-    raiz->filhos[k+1] = raiz->filhos[k];
-    k--;
-  }
-  //insere a chave na posição ideal
-  raiz->chave[pos].n = info.n;
-  raiz->filhos[pos+1] = filhodir;
-  raiz->preenchidos++;
+  if (raiz->valido[pos]==false && raiz->chave[pos].n == info.n){
+    raiz->valido[pos]=true;
+    return;
+  }else{
+    //realiza o remanejamento para manter as chaves ordenadas
+    while (k > pos && info.n < raiz->chave[k-1].n)
+    {
+        raiz->chave[k].n = raiz->chave[k-1].n;
+        raiz->filhos[k+1] = raiz->filhos[k];
+        k--;
+    }
+    //insere a chave na posição ideal
+    raiz->chave[pos].n = info.n;
+    raiz->valido[pos]=true;
+    raiz->filhos[pos+1] = filhodir;
+    raiz->preenchidos++;
+    }
 }
 
 
@@ -113,7 +121,7 @@ BTree Insercao(BTree raiz, indice chave, bool *flag, indice *retorno)
      return(NULL);
    }
   else {
-         pos = buscaBin(raiz->chave, raiz->preenchidos, chave.n);
+         pos = buscaBin(raiz, raiz->preenchidos, chave.n);
          if (raiz->preenchidos > pos && raiz->chave[pos].n == chave.n)
            {
              printf("Chave já contida na Árvore");
@@ -180,6 +188,27 @@ BTree Insere(BTree no, indice v)
      return(buffer);
    }
   else return(no);
+}
+
+BTree buscaChave(BTree raiz, int chave, int *position)
+{
+  BTree buffer;
+  int pos; //posição retornada pelo busca binária.
+
+  buffer = raiz;
+  while (buffer != NULL)
+   {
+     pos = buscaBin(buffer, buffer->preenchidos, chave);
+     if (pos < buffer->preenchidos && buffer->chave[pos].n == chave){
+        *position = pos;
+         return(buffer);
+     }
+     else{
+         *position = -1;
+        buffer = buffer->filhos[pos];
+     }
+   }
+  return(NULL);
 }
 
 void em_ordem(BTree raiz)
