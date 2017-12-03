@@ -109,6 +109,7 @@ void  insereChave(BTree raiz, indice info, BTree filhodir)
 
 BTree Insercao(BTree raiz, indice chave, int *flag, indice *retorno)
 {
+    //printf("\n%d\n", chave.seek.BASE)
   indice info_mediano; //auxiliar para armazenar a chave que irá subir para o pai
   int i, pos;
       BTree temp, filho_dir; //ponteiro para o filho à direita da chave
@@ -118,6 +119,7 @@ BTree Insercao(BTree raiz, indice chave, int *flag, indice *retorno)
      //O nó anterior é o ideal para inserir a nova chave (chegou em um nó folha)
      *flag = 1;
      *retorno = chave;
+     //printf("\n%d\n", (*retorno).seek.BASE);
      return(NULL);
    }
   else {
@@ -176,19 +178,20 @@ BTree Insere(BTree no, indice v)
   indice retorno;
   BTree filho_dir, buffer;
 
+    //printf("\n%d\n", v.seek.BASE);
   filho_dir = Insercao(no, v,&flag,&retorno);
   if (flag)
    { //Aumetará a altura da árvore
      buffer = criarNo();
      buffer->preenchidos = 1;
-     buffer->chave[0].n = retorno.n;
+     buffer->chave[0] = retorno;
      buffer->filhos[0] = no;
      buffer->filhos[1] = filho_dir;
      for (i = 2; i <= CHEIA; i++)
        buffer->filhos[i] = NULL;
      return(buffer);
    }
-  else return(no);
+  return(no);
 }
 
 BTree buscaChave(BTree raiz, int chave, int *position)
