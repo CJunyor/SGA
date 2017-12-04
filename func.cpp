@@ -1,80 +1,21 @@
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+#include <ostream>
+#include <fstream>
+#include <cstring>
+#include <string>
+#include <list>
+#include <vector>
 #include "func.h"
 
-void ImprimeMenu(){
-    cout("================================================");
-    cout("          1 - Abrir uma Tabela");
-    cout("          2 - Criar Tabela");
-    cout("          3 - Sair");
-    cout("================================================");
-    cout<<">";
-}
-
-void ImprimeSubMenu(){
-    cout("================================================");
-    cout("          1 - Atribuir Valores");
-    cout("          2 - Mostrar Valores");
-    cout("          3 - Salvar");
-    cout("          4 - Voltar ao Menu");
-    cout("================================================");
-    cout<<">";
-}
-
-void *Mallocar(char c, void *dado){
-    void *ax=nullptr;
-    if(c==INT) {
-        ax=new int;
-        *cint(ax)=*cint(dado);
-    }
-    else if(c==FLOAT) {
-        ax=new float;
-        *cfloat(ax)=*cfloat(dado);
-    }
-    else if(c==DOUBLE) {
-        ax=new double;
-        *cdouble(ax)=*cdouble(dado);
-    }
-    else if(c==CHAR) {
-        ax=new char;
-        *cchar(ax)=*cchar(dado);
-    }
-    else if(c==STRING) {
-        ax=new string;
-        *cstring(ax)=*cstring(dado);
-    }
-    return ax;
-}
-
-void *Alloc(char c){
-    void *ax=nullptr;
-    if(c==INT) {
-        ax=new int;
-        cin>>*cint(ax);
-    }
-    else if(c==FLOAT) {
-        ax=new float;
-        cin>>*cfloat(ax);
-    }
-    else if(c==DOUBLE) {
-        ax=new double;
-        cin>>*cdouble(ax);
-    }
-    else if(c==CHAR) {
-        ax=new char;
-        cin>>*cchar(ax);
-    }
-    else if(c==STRING) {
-        ax=new string;
-        cin>>*cstring(ax);
-    }
-    return ax;
-}
 
 void Desaloc(char c, void *p){
-    if(c==INT) delete cint(p);
-    else if(c==CHAR) delete cchar(p);
-    else if(c==FLOAT) delete cfloat(p);
-    else if(c==DOUBLE) delete cdouble(p);
-    else if(c==STRING) delete cstring(p);
+    if(c == INT) delete cint(p);
+    else if(c == CHAR) delete cchar(p);
+    else if(c == FLOAT) delete cfloat(p);
+    else if(c == DOUBLE) delete cdouble(p);
+    else if(c == STRING) delete cstring(p);
 }
 
 bool DDESALOCAR(fstream *f, DATABASE *db, SEGMENT S){
@@ -124,7 +65,11 @@ bool FILL_NEW_TABLE_HEADER(fstream *f, TABLE_HEADER *TH, int nc){
 }
 
 bool FILL_TABLE(fstream *f, TABLE *T, TABLE_HEADER *TH){
+    T->ID_ATUAL = 0;
     T->META_TABLE_POSITION = Dallocar(f, sizeof(META_DADO));
+    T->INDEX_AREA = Dallocar(f, sizeof(indice) * 20);
+    T->INDICES = T->INDEX_AREA;
+    T->INDICES.LIMIT = 0;
     T->REGISTROS.BASE = T->REGISTROS.LIMIT = -1;
     return true;
 }
@@ -154,11 +99,12 @@ bool FILL_MDADO(fstream *f, META_DADO *M, TABLE_HEADER *TH, vector<string> *v, D
 }
 
 bool FILL_DADOS(fstream *f, TABLE_HEADER *TH, DATA DADOS[]){
-    for(int i=0; i<TH->NUMERO_COLUNAS; i++){
+    for(int i=0; i<TH->NUMERO_COLUNAS-1; i++){
         DADOS[i].DATA_POS.BASE = DADOS[i].DATA_POS.LIMIT = -1;
         DADOS[i].NEXT = Dallocar(f, sizeof(DATA));
     }
-    DADOS[TH->NUMERO_COLUNAS].NEXT.BASE = DADOS[TH->NUMERO_COLUNAS].NEXT.LIMIT = -1;
+    DADOS[TH->NUMERO_COLUNAS-1].DATA_POS.BASE = DADOS[TH->NUMERO_COLUNAS-1].DATA_POS.LIMIT = -1;
+    DADOS[TH->NUMERO_COLUNAS-1].NEXT = DADOS[TH->NUMERO_COLUNAS-1].DATA_POS;
     return true;
 }
 
@@ -232,7 +178,7 @@ bool SET_REGISTER(fstream *f, REGISTRO  *R, SEGMENT P){
 }
 
 bool SET_DADOS(fstream *f, TABLE_HEADER *TH, DATA DADOS[]){
-    for(int i=1; i<TH->NUMERO_COLUNAS; i++) SET_BLOCK(f, cchar(&DADOS[i]), DADOS[i-1].NEXT);
+    for(int i=1; i<TH->NUMERO_COLUNAS; i++) if(!SET_BLOCK(f, cchar(&DADOS[i]), DADOS[i-1].NEXT)) return false;
     return true;
 }
 
@@ -281,6 +227,22 @@ bool SET_COLUNA(fstream *f, DATABASE *db, META_DADO *M, TABLE *T, string tipos, 
     return true;
 }
 
+bool SET_INDEX(fstream *f, TABLE *T, TABLE_HEADER *TH, REGISTRO *R, SEGMENT S){
+    indice i;
+    i.n = T->ID_ATUAL++;
+    i.seek = S;
+    SEGMENT ax;
+    ax.BASE = T->INDICES.BASE + T->INDICES.LIMIT;
+    ax.LIMIT = sizeof(indice);
+    cout("INDEX:"<< ax.BASE);
+    cout("INDEX:"<< ax.LIMIT);
+    R->INDEX = ax;
+    if(!SET_BLOCK(f, cchar(&i), ax)) return false;
+    T->INDICES.LIMIT += sizeof(indice);
+    if(!SET_TABLE(f, T, TH->TABLE_POSITION)) return false;
+    return true;
+}
+
 void *Malocar(char TIPO){
     if(TIPO == INT) return new int;
     else if(TIPO == FLOAT) return new float;
@@ -288,6 +250,21 @@ void *Malocar(char TIPO){
     else if(TIPO == CHAR) return new char;
     else if(TIPO == STRING) return new string;
     else return nullptr;
+}
+
+bool Atribuir(node *n, string s, char TIPO){
+    n->info = Malocar(TIPO);
+    if(n->info == nullptr){
+        cout("Erro na atribuicao");
+        return false;
+    }
+    if(TIPO == INT) *cint(n->info) = stoi(s);
+    else if(TIPO == FLOAT) *cfloat(n->info) = stof(s);
+    else if(TIPO == DOUBLE) *cdouble(n->info) = stod(s);
+    else if(TIPO == CHAR) *cchar(n->info) = s[0];
+    else if(TIPO == STRING) *cstring(n->info) = s;
+    else return false;
+    return true;
 }
 
 bool COMPARAR(void *p, void *p2, char TIPO){
@@ -394,6 +371,58 @@ SEGMENT SEARCH_TABLE(fstream *f, DATABASE *db, string nome){
     return POS;
 }
 
+string PEGAR_REG_TIPO(DATABASE *db, string tabela){
+    fstream *DBASE;
+    SEGMENT S;
+    TABLE_HEADER TH;
+    TABLE T;
+    META_DADO META;
+    DBASE = OPEN_DATABASE(db);
+    if(DBASE == nullptr) return "";
+    S = SEARCH_TABLE(DBASE, db, tabela);
+    if(!(VALID_SEG(S) && LER_TABLE_HEADER(DBASE, &TH, S) && LER_TABELA(DBASE, &T, TH.TABLE_POSITION))){
+        cout("Tabela nao encontrada");
+        DBASE->close();
+        delete DBASE;
+        return "";
+    }
+    if(!LER_MDADO(DBASE, &META, &T)){
+        cout("ERRO ao buscar metadados");
+        DBASE->close();
+        delete DBASE;
+        return "";
+    }
+    string ax;
+    ax.resize(META.TIPOS.LIMIT);
+    if(!GET_BLOCK(DBASE, cchar(ax.c_str()), META.TIPOS)){
+        cout("ERRO ao buscar metadados");
+        DBASE->close();
+        delete DBASE;
+        return "";
+    }
+    return ax;
+}
+
+SEGMENT PEGAR_TABLE_INDEX(DATABASE *db, TABLE_HEADER *TH, TABLE *T, META_DADO *M, string tabela){
+    fstream *DBASE;
+    SEGMENT S;
+    SEGMENT ax;
+    DBASE = OPEN_DATABASE(db);
+    S.BASE = S.LIMIT = -1;
+    if(DBASE == nullptr) return S;
+    ax = SEARCH_TABLE(DBASE, db, tabela);
+    if(!(VALID_SEG(ax) && LER_TABLE_HEADER(DBASE, TH, ax) && LER_TABELA(DBASE, T, TH->TABLE_POSITION) && LER_MDADO(DBASE, M, T))){
+        cout("Tabela nao encontrada");
+        DBASE->close();
+        delete DBASE;
+        return S;
+    }
+    ax = T->INDICES;
+    DBASE->close();
+    delete DBASE;
+    return ax;
+}
+
 bool MDADO_TO_STRING(META_DADO *M, vector<string> *s, fstream *f){
     /*
         retorna os tipos ("s,i,s"); [0]
@@ -411,7 +440,7 @@ bool MDADO_TO_STRING(META_DADO *M, vector<string> *s, fstream *f){
             cout("Ocorreu um erro ao tentar transformar o metadado");
             return false;
         }
-        if(i != (*s).size()-1){
+        if(VALID_SEG(D.NEXT)){
             if(!GET_BLOCK(f, cchar(&D), D.NEXT)){
                 cout("Ocorreu um erro ao tentar transformar o metadado");
                 return false;
@@ -454,31 +483,38 @@ bool LER_REGISTRO(fstream *f, REGISTRO *R, SEGMENT POS){
 }
 
 bool RtoMR(fstream *f, vector<string> *s, REGISTRO *R, MEM_REGISTER *MR){
-    node n;
     DATA D = R->DADOS;
     for(unsigned int i=0; i<(*s)[0].size(); i++){
+        node n;
         n.nome = (*s)[i+1];
         n.info = Malocar((*s)[0][i]);
-        if((*s)[0][i]=='s'){
+        if((*s)[0][i] == STRING){
+            cout(D.DATA_POS.BASE);
+            cout(D.DATA_POS.LIMIT);
             (*cstring(n.info)).resize(D.DATA_POS.LIMIT);
             if(!GET_BLOCK(f, cchar((*cstring(n.info)).c_str()), D.DATA_POS)){
                 cout("Ocorreu um erro ao transformar o registro");
                 return false;
             }
+            cout(*cstring(n.info));
         }
         else if(!GET_BLOCK(f, cchar(n.info), D.DATA_POS)){
             cout("Ocorreu um erro ao transformar o registro");
             return false;
         }
         MR->vars.push_back(n);
-        if((!GET_BLOCK(f, cchar(&D), D.NEXT)) && i != (*s)[0].size()-1){
-            cout("Ocorreu um erro ao transformar o registro");
-            return false;
+        if(VALID_SEG(D.NEXT)){
+            if(!GET_BLOCK(f, cchar(&D), D.NEXT)){
+                cout("Ocorreu um erro ao transformar o registro");
+                return false;
+            }
         }
     }
     return true;
 }
+
 //=======================================================================================================
+
 bool CRIAR_DATABASE(string NOME, vector<string>CONTR[], int N_TAB){
     DATABASE db;
     db.NOME = NOME;
@@ -668,18 +704,53 @@ bool INSERIR_REGISTRO(DATABASE *db, MEM_REGISTER REGISTER){
                 cout("Ocorreu um erro ao ler o registro");
                 return false;
             }
+            if(R.NEXT.BASE==P.BASE) {
+                R.NEXT.BASE = R.NEXT.LIMIT = -1;
+                SET_REGISTER(DBASE, &R, P);
+            }
         }
         R.NEXT = SEG;
-        DBASE->seekg((P.BASE+P.LIMIT)-sizeof(SEGMENT));
-        DBASE->write(cchar(&R.NEXT), sizeof(SEGMENT));
+        cout("SEG ALOCADO:"<<R.NEXT.BASE);
+        cout("SEG ALOCADO:"<<R.NEXT.LIMIT);
+        if(!SET_REGISTER(DBASE, &R, P)){
+            DBASE->close();
+            delete DBASE;
+            cout("Ocorreu um erro ao inserir registro");
+            return false;
+        }
+        //DBASE->seekg((P.BASE+P.LIMIT)-sizeof(SEGMENT));
+        //DBASE->write(cchar(&R.NEXT), sizeof(SEGMENT));
         TH.NUMERO_REGISTROS++;
-        SET_TABLE_HEADER(DBASE, &TH, SH);
+        if(!SET_TABLE_HEADER(DBASE, &TH, SH)){
+            DBASE->close();
+            delete DBASE;
+            cout("Ocorreu um erro ao inserir registro");
+            return false;
+        }
+        /*
+        if(!SET_INDEX(DBASE, &TABELA, &TH, &R, SEG)){
+            DBASE->close();
+            delete DBASE;
+            cout("Ocorreu um erro ao criar indice");
+            return false;
+        }
+        */
     }
     else{
-        TABELA.REGISTROS = SEG;
-        SET_TABLE(DBASE, &TABELA, TH.TABLE_POSITION);
         TH.NUMERO_REGISTROS++;
-        SET_TABLE_HEADER(DBASE, &TH, SH);
+        if(!SET_TABLE_HEADER(DBASE, &TH, SH)){
+            DBASE->close();
+            delete DBASE;
+            cout("Ocorreu um erro ao inserir registro");
+            return false;
+        }
+        TABELA.REGISTROS = SEG;
+        if(!SET_INDEX(DBASE, &TABELA, &TH, &R,SEG)){
+            DBASE->close();
+            delete DBASE;
+            cout("Ocorreu um erro ao criar indice");
+            return false;
+        }
     }
     DATA DADOS[TH.NUMERO_COLUNAS];
     if(!FILL_DADOS(DBASE, &TH, DADOS)){
@@ -687,7 +758,6 @@ bool INSERIR_REGISTRO(DATABASE *db, MEM_REGISTER REGISTER){
         delete DBASE;
         return false;
     }
-    P.BASE = P.LIMIT = -1;
     if(!LER_MDADO(DBASE, &MDADO, &TABELA)){
         DBASE->close();
         delete DBASE;
@@ -700,7 +770,14 @@ bool INSERIR_REGISTRO(DATABASE *db, MEM_REGISTER REGISTER){
         delete DBASE;
         return false;
     }
+    if(REGISTER.vars[0].nome.empty())
+        for(unsigned int i=1; i<s.size(); i++){
+            REGISTER.vars[i-1].nome = s[i];
+        }
     for(unsigned int i=0; i<REGISTER.vars.size(); i++){
+    cout(s[1]);
+    cout(s[2]);
+    cout(s[3]);
         for(int j=0; j<TH.NUMERO_COLUNAS; j++){
             if(s[j+1]==REGISTER.vars[i].nome){
                 DADOS[j].DATA_POS = Dallocar(DBASE, TSize(s[0][j]));
@@ -711,7 +788,9 @@ bool INSERIR_REGISTRO(DATABASE *db, MEM_REGISTER REGISTER){
         }
     }
     R.DADOS = DADOS[0];
-    R.NEXT = P;
+    R.NEXT.BASE = R.NEXT.LIMIT = -1;
+    cout("NEXT:"<<R.NEXT.BASE);
+    cout("NEXT:"<<R.NEXT.LIMIT);
     if(!(SET_DADOS(DBASE, &TH, DADOS) && SET_REGISTER(DBASE, &R, SEG))){
         DBASE->close();
         delete DBASE;
@@ -747,9 +826,8 @@ vector<MEM_REGISTER> PEGAR_REGISTRO(DATABASE *db, string CONTROLE[3], void **p){
         if(!GET_BLOCK(DBASE, cchar(ax.c_str()), MDADO.NOME)) return MRL;
         if(ax == CONTROLE[0]) break;
         if(!VALID_SEG(TH.NEXT)) return MRL;
-        if(!(LER_TABLE_HEADER(DBASE, &TH, TH.NEXT)&&LER_TABELA(DBASE, &TABELA, TH.TABLE_POSITION))) return MRL;
+        if(!(LER_TABLE_HEADER(DBASE, &TH, TH.NEXT) && LER_TABELA(DBASE, &TABELA, TH.TABLE_POSITION))) return MRL;
     }
-
     vector<string> s;
     s.resize(TH.NUMERO_COLUNAS+1);
     if(!MDADO_TO_STRING(&MDADO, &s, DBASE)) return MRL;

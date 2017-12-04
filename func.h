@@ -1,11 +1,5 @@
-#include <cstdio>
-#include <cstdlib>
 #include <iostream>
-#include <ostream>
-#include <fstream>
 #include <cstring>
-#include <string>
-#include <list>
 #include <vector>
 #define cout(x) cout<<x<<endl
 #define cint(x) (int *) x
@@ -24,7 +18,15 @@
 #define SAIDA 'O'
 #define ENTRADA_SAIDA 'Î'
 
+#include <stdio.h>
+#include <stdlib.h>
+#define CHEIA 4
+#define MAXFILHOS 5
+#define MIN_OCUP 2
+
+
 using namespace std;
+
 //=============================================================================================
 
 typedef struct{
@@ -38,10 +40,17 @@ typedef struct{
 }MEM_REGISTER;
 
 //=============================================================================================
+
 typedef struct{
     int BASE;
     int LIMIT;
 }SEGMENT;
+
+
+typedef struct{
+    int n;
+    SEGMENT seek;
+}indice;
 
 typedef struct{
     SEGMENT DATA_POS;
@@ -67,10 +76,14 @@ typedef struct{
 
 typedef struct{
     DATA DADOS;
+    SEGMENT INDEX;
     SEGMENT NEXT;
 }REGISTRO;
 
 typedef struct{
+    int ID_ATUAL;
+    SEGMENT INDEX_AREA;
+    SEGMENT INDICES;
     SEGMENT META_TABLE_POSITION;
     SEGMENT REGISTROS;
 }TABLE;
@@ -106,26 +119,70 @@ bool LER_TABLE_HEADER(fstream *, TABLE_HEADER *, SEGMENT);
 bool LER_TABELA(fstream *, TABLE *, SEGMENT);
 bool LER_MDADO(fstream *, META_DADO *, TABLE *);
 bool LER_REGISTRO(fstream *, REGISTRO *, SEGMENT);
-bool RtoMR(fstream *, string *, REGISTRO *, MEM_REGISTER *);
-
+bool RtoMR(fstream *, vector<string> *, REGISTRO *, MEM_REGISTER *);
 
 
 vector<MEM_REGISTER> PEGAR_REGISTRO(DATABASE *, string [3], void **);
-bool MDADO_TO_STRING(META_DADO *, int, fstream *);
-SEGMENT SEARCH_TABLE(fstream *, DATABASE *, string, SEGMENT);
+bool MDADO_TO_STRING(META_DADO *, vector<string> *, fstream *);
+SEGMENT SEARCH_TABLE(fstream *, DATABASE *, string);
+string PEGAR_REG_TIPO(DATABASE *, string);
+SEGMENT PEGAR_TABLE_INDEX(DATABASE *, TABLE_HEADER *, TABLE *, META_DADO *, string);
 fstream *OPEN_DATABASE (DATABASE *);
 SEGMENT Dallocar(fstream *, int);
 int TSize(char);
 bool GET_BLOCK(fstream *, char *, SEGMENT);
 void *Malocar(char);
+bool Atribuir(node *, string, char);
 void IMPRIMIR_MR(vector<MEM_REGISTER> *, string);
 bool COMPARAR(void *, void *, char);
 bool ABRIR_ARQUIVO(fstream *, string, char);
 bool VALID_SEG(SEGMENT);
 bool DDESALOCAR(fstream *, DATABASE *, SEGMENT);
 //=================================================================================
-void ImprimeMenu();
-void ImprimeSubMenu();
-void *Mallocar(char, void*);
-void *Alloc(char);
+
 void Desaloc(char, void *);
+
+
+
+
+
+typedef struct NoArv{
+    int preenchidos;
+    indice chave[CHEIA];
+    struct NoArv *filhos[MAXFILHOS];
+    int valido[CHEIA];
+}NoArv, *BTree;
+
+BTree criarNo();
+// Cria um nó vazio, inicializado.
+
+void carregaBTree(char nome[], BTree *raiz, SEGMENT area);
+//carrega a arvore com os indices presentes no arquivo do BD
+
+int buscaBin(BTree vetor, int preenchidos, int chave);
+// Realiza uma busca binária em um vetor do nó da BTree, retornando a posição no vetor do nó, caso encontrado
+// ou retornando a posição no vetor de filhos para continuar a busca
+
+void  insereChave(BTree raiz, indice info, BTree filhodir);
+// Dado um nó da BTree, insere o indice nesse nó.
+
+BTree Insercao(BTree raiz, indice chave, int *flag, indice *retorno);
+// Função intermediária para inserção.
+// Insere um nó na BTree, procurando primeiramente qual o nó ideal para se inserir, ou dividindo o nó em dois
+// caso se faça necessário. flag informa se existe se ainda existe a necessidade de inserção, essa informação é usada
+// na recursividade e na função insere. Chave é o indice que se deseja inserir, e retorno pode ser o proprio indice ou
+// o um indice especial contendo o valor mediano que será promovido para o nó de cima.
+
+
+BTree Insere(BTree no, indice v);
+// Função de inserção propriamente dita, onde se passa a raiz e o indice e ela insere na BTree
+// Foi necessária pois pode acontecer de a subdivisão se fazer necessária na raiz, em outras palavras
+// O indice precisar ser inserido na raiz mas ela estar cheia.
+
+BTree buscaChave(BTree raiz, int chave, int *position);
+// Busca uma chave dentro da arvore, retornando o nó que contem a chave (ou nulo caso não ache)
+// Caso ache o valor, 'pos' recebe o deslogamento dentro do no de retorno onde o dado se encontra
+
+void em_ordem(BTree raiz);
+// Printa os valores da BTree de forma crescente, baseada nas funções do site da ifmg.
+

@@ -1,6 +1,5 @@
 #ifndef ANALISADOR_H_INCLUDED
 #define ANALISADOR_H_INCLUDED
-
 /* Função onde printa a query e diz cada tipo de palavra que foi digitado */
 void printal();
 
@@ -22,4 +21,5 @@ void analise(char *Query);
 void createDB();
 void comando();
 
+const char * ficarBig(char []);
 #endif // ANALISADOR_H_INCLUDED
