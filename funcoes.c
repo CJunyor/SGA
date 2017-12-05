@@ -5,7 +5,6 @@
 #include "func.h"
 
 
-
 char    operadores[2] = {
 			'*','='
 		};
@@ -25,6 +24,26 @@ int     t1=0, t2=0, k, t3=0, t4=0, t5=0, t6=0,TamChaves=0,
 char    QueryDel[20], tIden[20][20], tOp[20][20], Chave[20][20],
 		iden[20][20], oper[20][20], delem[20], Literail[20][20], lit[20];
 
+void LimparStrings()
+{	
+	int auxL;
+	for(auxL = 0; auxL < 20; auxL++)
+	{
+		memset( tIden[auxL], '\0', strlen( tIden[auxL] ) * sizeof( char ) );
+		memset( tOp[auxL], '\0', strlen( tOp[auxL] ) * sizeof( char ) );
+		memset( Chave[auxL], '\0', strlen( Chave[auxL] ) * sizeof( char ) );
+		memset( iden[auxL], '\0', strlen( iden[auxL] ) * sizeof( char ) );
+		memset( oper[auxL], '\0', strlen( oper[auxL] ) * sizeof( char ) );	
+		memset( Literail[auxL], '\0', strlen( Literail[auxL] ) * sizeof( char ) );
+	}
+	
+	memset( delem, '\0', strlen( delem ) * sizeof( char ) );
+	memset( QueryDel, '\0', strlen( QueryDel ) * sizeof( char ) );	
+	memset( lit, '\0', strlen( lit ) * sizeof( char ) );
+	
+	t1=0; t2=0; k=0; t3=0; t4=0; t5=0; t6=0; 
+	TamChaves=0; TamOperadores=0; TamK=0; TamLiterais=0; TamConst=0; l=0; j=0;	
+}
 
 void comando()
 {
