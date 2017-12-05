@@ -93,18 +93,20 @@ typedef struct{
     //bool OPEN;
     DATABASE_HEADER BASE_HEADER;
     SEGMENT TABELAS_HEADER_SEG;
+    SEGMENT SEGMENTOS_LIVRES;
 }DATABASE;
 
 
 //=================================================================================
 bool CONTROL(DATABASE *, vector<string>[]);
 bool CRIAR_DATABASE(string, vector<string>[], int);
+bool CRIAR_DATABASE_VAZIO(string);
 bool FILL_TABLE_HEADER(fstream *, TABLE_HEADER *, int);
 bool FILL_TABLE(fstream *, TABLE *, TABLE_HEADER *);
 bool FILL_MDADO(fstream *, META_DADO *, TABLE_HEADER *, vector<string> *, DATA []);
 bool FILL_DADOS(fstream *, TABLE_HEADER *, DATA []);
 bool SET_BLOCK(fstream *, char *, SEGMENT);
-bool SET_DB_HEADER(fstream *, DATABASE *);
+bool SET_DB_HEADER(fstream *, DATABASE *, bool);
 bool SET_TABLE_HEADER(fstream *, TABLE_HEADER *, SEGMENT);
 bool SET_TABLE(fstream *, TABLE *, SEGMENT);
 bool SET_MDADO(fstream *, META_DADO *, TABLE_HEADER *, TABLE *, DATA[]);
@@ -115,6 +117,7 @@ bool SET_COLUNA(fstream *, DATABASE *, META_DADO *, TABLE *, string, string);
 bool INSERIR_REGISTRO(DATABASE *, MEM_REGISTER);
 bool INSERIR_COLUNA(DATABASE *, string, string, char);
 bool INSERIR_TABELA(DATABASE *, vector<string> *);
+bool INSERIR_TABELA_VAZIA(DATABASE *, string);
 bool LER_TABLE_HEADER(fstream *, TABLE_HEADER *, SEGMENT);
 bool LER_TABELA(fstream *, TABLE *, SEGMENT);
 bool LER_MDADO(fstream *, META_DADO *, TABLE *);
@@ -124,7 +127,7 @@ bool RtoMR(fstream *, vector<string> *, REGISTRO *, MEM_REGISTER *);
 
 vector<MEM_REGISTER> PEGAR_REGISTRO(DATABASE *, string [3], void **);
 bool MDADO_TO_STRING(META_DADO *, vector<string> *, fstream *);
-SEGMENT SEARCH_TABLE(fstream *, DATABASE *, string);
+SEGMENT SEARCH_TABLE(fstream *f, DATABASE *db, TABLE_HEADER *TH, TABLE *T, META_DADO *M, string nome);
 string PEGAR_REG_TIPO(DATABASE *, string);
 SEGMENT PEGAR_TABLE_INDEX(DATABASE *, TABLE_HEADER *, TABLE *, META_DADO *, string);
 fstream *OPEN_DATABASE (DATABASE *);

@@ -1,18 +1,10 @@
--select on teste * from Alunos;
-insert on teste into Alunos values("Maria", "456123789", "18");
-insert on teste into Alunos values("Pedro", "321654987", "87");
--insert on teste into Alunos values("Candido", "123456789", "19");
--insert on teste into Alunos values("Maria", "456123789", "18");
--insert on teste into Alunos values("Maria", "456123789", "18");
-insert on teste into Alunos values("Maria", "456123789", "18");
-insert on teste into Alunos values("Pedro", "321654987", "87");
-insert on teste into Alunos values("Maria", "456123789", "18");
-insert on teste into Alunos values("Pedro", "321654987", "87");
-insert on teste into Alunos values("Maria", "456123789", "18");
-insert on teste into Alunos values("Pedro", "321654987", "87");
-insert on teste into Alunos values("Maria", "456123789", "18");
-insert on teste into Alunos values("Pedro", "321654987", "87");
-insert on teste into Alunos values("Maria", "456123789", "18");
-insert on teste into Alunos values("Pedro", "321654987", "87");
-insert on teste into Alunos values("Maria", "456123789", "18");
-insert on teste into Alunos values("Pedro", "321654987", "87");
+--create database teste2;
+--create table Alunos on teste2;
+--create column ("Nome") string on table Alunos in teste2;
+--create column ("CPF") string on table Alunos in teste2;
+--create column ("Idade") int on table Alunos in teste2;
+--insert on teste2 into Alunos Values ("Candido");
+--insert on teste2 into Alunos Values ("Diego");
+select on teste2 * from Alunos
+--select on teste * from Professores;
+--insert on teste into Professores Values ("Jorge","2424242424","26589657458","145");

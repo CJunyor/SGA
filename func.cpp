@@ -19,6 +19,17 @@ void Desaloc(char c, void *p){
 }
 
 bool DDESALOCAR(fstream *f, DATABASE *db, SEGMENT S){
+    if(VALID_SEG(S)){
+        DATA D;
+        SEGMENT ax, ax2;
+        D.DATA_POS = S;
+        D.NEXT = db->SEGMENTOS_LIVRES;
+        ax = Dallocar(f, sizeof(DATA));
+        if(!SET_BLOCK(f, cchar(&D), ax)) return false;
+        ax2.BASE = 1 + sizeof(int) + sizeof(SEGMENT);
+        ax2.LIMIT = sizeof(SEGMENT);
+        if(!SET_BLOCK(f, cchar(&ax), ax2)) return false;
+    }
     return true;
 }
 
@@ -37,8 +48,8 @@ SEGMENT Dallocar(fstream *f, int TAM){
     SEGMENT S;
     if(TAM>0){
         char lixo[TAM];
-        (*f).seekg(0, fstream::end);
-        S.BASE=(*f).tellg();
+        (*f).seekp(0, fstream::end);
+        S.BASE=(*f).tellp();
         S.LIMIT=TAM;
         (*f).write(cchar(lixo), TAM);
     }else{
@@ -67,7 +78,7 @@ bool FILL_NEW_TABLE_HEADER(fstream *f, TABLE_HEADER *TH, int nc){
 bool FILL_TABLE(fstream *f, TABLE *T, TABLE_HEADER *TH){
     T->ID_ATUAL = 0;
     T->META_TABLE_POSITION = Dallocar(f, sizeof(META_DADO));
-    T->INDEX_AREA = Dallocar(f, sizeof(indice) * 20);
+    T->INDEX_AREA = Dallocar(f, sizeof(indice) * 100);
     T->INDICES = T->INDEX_AREA;
     T->INDICES.LIMIT = 0;
     T->REGISTROS.BASE = T->REGISTROS.LIMIT = -1;
@@ -117,19 +128,28 @@ bool GET_BLOCK(fstream *f, char *p, SEGMENT S){
 
 bool SET_BLOCK(fstream *f, char *p, SEGMENT S){
     if(!VALID_SEG(S)) return false;
-    (*f).seekg(S.BASE);
+    (*f).seekp(S.BASE);
     (*f).write(p, S.LIMIT);
+    if((*f).bad()){
+        cout("ERRO no set block finalizando");
+        exit(1);
+    }
     return true;
 }
 
-bool SET_DB_HEADER(fstream *f, DATABASE *db){
+bool SET_DB_HEADER(fstream *f, DATABASE *db, bool vazio){
     char BIT = BIT_PROTETOR;
-    SEGMENT S;
+    SEGMENT S[2];
     (*f).write(cchar(&BIT), 1);
     (*f).write(cchar(&db->BASE_HEADER.NUMERO_TABELAS), sizeof(int));
-    S = Dallocar(f, sizeof(SEGMENT));
-    db->TABELAS_HEADER_SEG = Dallocar(f, sizeof(TABLE_HEADER));
-    if(!SET_BLOCK(f, cchar(&db->TABELAS_HEADER_SEG), S)) return false;
+    S[0] = Dallocar(f, sizeof(SEGMENT));
+    S[1] = Dallocar(f, sizeof(SEGMENT));
+    if(vazio){
+        db->TABELAS_HEADER_SEG.BASE = db->TABELAS_HEADER_SEG.LIMIT = -1;
+    }
+    else db->TABELAS_HEADER_SEG = Dallocar(f, sizeof(TABLE_HEADER));
+    if(!SET_BLOCK(f, cchar(&db->TABELAS_HEADER_SEG), S[0])) return false;
+    if(!SET_BLOCK(f, cchar(&db->SEGMENTOS_LIVRES), S[1])) return false;
     return true;
 }
 
@@ -138,6 +158,10 @@ bool SET_TABLE_HEADER(fstream *f, TABLE_HEADER *TH, SEGMENT S){
         cout("Erro ao inserir Cabeçalho da TabelaTabela");
         return false;
     }
+    cout("SEG BASE: "<<S.BASE);
+    cout("SEG LIMIT: "<<S.LIMIT);
+    cout("TABELA BASE: "<<TH->TABLE_POSITION.BASE);
+    cout("TABELA LIMIT: "<<TH->TABLE_POSITION.LIMIT);
     return true;
 }
 
@@ -180,6 +204,7 @@ bool SET_REGISTER(fstream *f, REGISTRO  *R, SEGMENT P){
 bool SET_DADOS(fstream *f, TABLE_HEADER *TH, DATA DADOS[]){
     for(int i=1; i<TH->NUMERO_COLUNAS; i++) if(!SET_BLOCK(f, cchar(&DADOS[i]), DADOS[i-1].NEXT)) return false;
     return true;
+
 }
 
 bool SET_COLUNA(fstream *f, DATABASE *db, META_DADO *M, TABLE *T, string tipos, string nome){
@@ -208,17 +233,27 @@ bool SET_COLUNA(fstream *f, DATABASE *db, META_DADO *M, TABLE *T, string tipos, 
             return false;
         }
     }
-    D.NEXT = Dallocar(f, sizeof(DATA));
-    if(!SET_BLOCK(f, cchar(&D), S)){
-        cout("Occoreu um erro a inserir a coluna");
-        return false;
+    if(VALID_SEG(M->NOMES.DATA_POS)){
+        D.NEXT = Dallocar(f, sizeof(DATA));
+        if(!SET_BLOCK(f, cchar(&D), S)){
+            cout("Occoreu um erro a inserir a coluna");
+            return false;
+        }
     }
     DATA ax;
     ax.DATA_POS = Dallocar(f, nome.size());
     ax.NEXT.BASE = ax.NEXT.LIMIT = -1;
-    if(!SET_BLOCK(f, cchar(&ax), D.NEXT)){
-        cout("Occoreu um erro a inserir a coluna");
-        return false;
+    if(!VALID_SEG(M->NOMES.DATA_POS)){
+        if(!SET_BLOCK(f, cchar(&ax), S)){
+            cout("Occoreu um erro a inserir a coluna");
+            return false;
+        }
+    }
+    else{
+        if(!SET_BLOCK(f, cchar(&ax), D.NEXT)){
+            cout("Occoreu um erro a inserir a coluna");
+            return false;
+        }
     }
     if(!SET_BLOCK(f, cchar(nome.c_str()), ax.DATA_POS)){
         cout("Occoreu um erro a inserir a coluna");
@@ -234,8 +269,6 @@ bool SET_INDEX(fstream *f, TABLE *T, TABLE_HEADER *TH, REGISTRO *R, SEGMENT S){
     SEGMENT ax;
     ax.BASE = T->INDICES.BASE + T->INDICES.LIMIT;
     ax.LIMIT = sizeof(indice);
-    cout("INDEX:"<< ax.BASE);
-    cout("INDEX:"<< ax.LIMIT);
     R->INDEX = ax;
     if(!SET_BLOCK(f, cchar(&i), ax)) return false;
     T->INDICES.LIMIT += sizeof(indice);
@@ -317,7 +350,7 @@ bool CONTROL(DATABASE *db, vector<string>CONTR[]){
     TABLE TABELAS[NT];
     META_DADO M_DADOS[NT];
     if(!ABRIR_ARQUIVO(&DBASE, db->NOME, SAIDA)) return false;
-    if(!SET_DB_HEADER(&DBASE, db)) return false;
+    if(!SET_DB_HEADER(&DBASE, db, false)) return false;
     if(!FILL_TABLE_HEADER(&DBASE, &TH[0], stoi(CONTR[0][1]))) return false;
     if(!SET_TABLE_HEADER(&DBASE, &TH[0], db->TABELAS_HEADER_SEG)) return false;
 
@@ -342,51 +375,43 @@ bool VALID_SEG(SEGMENT S){
     return(S.BASE!=-1&&S.LIMIT!=-1);
 }
 
-SEGMENT SEARCH_TABLE(fstream *f, DATABASE *db, string nome){
-    SEGMENT POS;
-    SEGMENT S = db->TABELAS_HEADER_SEG;
-    TABLE_HEADER TH;
-    TABLE T;
-    META_DADO M;
-    POS.BASE = POS.LIMIT = -1;
-    if(!LER_TABLE_HEADER(f, &TH, S)) return POS;
-    if(!LER_TABELA(f, &T, TH.TABLE_POSITION)) return POS;
-    for(int i=1; i<db->BASE_HEADER.NUMERO_TABELAS; i++){
-        if(!LER_MDADO(f, &M, &T)) return POS;
+SEGMENT SEARCH_TABLE(fstream *f, DATABASE *db, TABLE_HEADER *TH, TABLE *T, META_DADO *M, string nome){
+    SEGMENT S, ax;
+    S.BASE = S.LIMIT = -1;
+    ax = db->TABELAS_HEADER_SEG;
+    cout(db->BASE_HEADER.NUMERO_TABELAS);
+    cout(db->TABELAS_HEADER_SEG.BASE);
+    if(!LER_TABLE_HEADER(f, TH, db->TABELAS_HEADER_SEG)) return S;
+    if(!LER_TABELA(f, T, TH->TABLE_POSITION)) return S;
+    for(int i=0; i<db->BASE_HEADER.NUMERO_TABELAS; i++){
+        if(!LER_MDADO(f, M, T)) return S;
         string s;
-        s.resize(M.NOME.LIMIT);
-        if(!GET_BLOCK(f, cchar(s.c_str()), M.NOME)){
-            return POS;
-        }
-        if(s == nome) {
+        s.resize(M->NOME.LIMIT);
+        if(!GET_BLOCK(f, cchar(s.c_str()), M->NOME)){
             return S;
         }
-        S = TH.NEXT;
-        if(!(LER_TABLE_HEADER(f, &TH, TH.NEXT) && LER_TABELA(f, &T, TH.TABLE_POSITION))){
+        cout(s);
+        if(s == nome) {
+            return ax;
+        }
+        ax = TH->NEXT;
+        if(!(LER_TABLE_HEADER(f, TH, TH->NEXT) && LER_TABELA(f, T, TH->TABLE_POSITION))){
             cout("ERRO! Tabela não encontrada");
-            return POS;
+            return S;
         }
     }
     cout("ERRO! Tabela não encontrada");
-    return POS;
+    return S;
 }
 
 string PEGAR_REG_TIPO(DATABASE *db, string tabela){
     fstream *DBASE;
-    SEGMENT S;
     TABLE_HEADER TH;
     TABLE T;
     META_DADO META;
     DBASE = OPEN_DATABASE(db);
     if(DBASE == nullptr) return "";
-    S = SEARCH_TABLE(DBASE, db, tabela);
-    if(!(VALID_SEG(S) && LER_TABLE_HEADER(DBASE, &TH, S) && LER_TABELA(DBASE, &T, TH.TABLE_POSITION))){
-        cout("Tabela nao encontrada");
-        DBASE->close();
-        delete DBASE;
-        return "";
-    }
-    if(!LER_MDADO(DBASE, &META, &T)){
+    if(!VALID_SEG(SEARCH_TABLE(DBASE, db, &TH, &T, &META, tabela))){
         cout("ERRO ao buscar metadados");
         DBASE->close();
         delete DBASE;
@@ -406,21 +431,18 @@ string PEGAR_REG_TIPO(DATABASE *db, string tabela){
 SEGMENT PEGAR_TABLE_INDEX(DATABASE *db, TABLE_HEADER *TH, TABLE *T, META_DADO *M, string tabela){
     fstream *DBASE;
     SEGMENT S;
-    SEGMENT ax;
     DBASE = OPEN_DATABASE(db);
     S.BASE = S.LIMIT = -1;
     if(DBASE == nullptr) return S;
-    ax = SEARCH_TABLE(DBASE, db, tabela);
-    if(!(VALID_SEG(ax) && LER_TABLE_HEADER(DBASE, TH, ax) && LER_TABELA(DBASE, T, TH->TABLE_POSITION) && LER_MDADO(DBASE, M, T))){
+    if(!VALID_SEG(SEARCH_TABLE(DBASE, db, TH, T, M, tabela))){
         cout("Tabela nao encontrada");
         DBASE->close();
         delete DBASE;
         return S;
     }
-    ax = T->INDICES;
     DBASE->close();
     delete DBASE;
-    return ax;
+    return T->INDICES;
 }
 
 bool MDADO_TO_STRING(META_DADO *M, vector<string> *s, fstream *f){
@@ -487,20 +509,19 @@ bool RtoMR(fstream *f, vector<string> *s, REGISTRO *R, MEM_REGISTER *MR){
     for(unsigned int i=0; i<(*s)[0].size(); i++){
         node n;
         n.nome = (*s)[i+1];
-        n.info = Malocar((*s)[0][i]);
-        if((*s)[0][i] == STRING){
-            cout(D.DATA_POS.BASE);
-            cout(D.DATA_POS.LIMIT);
-            (*cstring(n.info)).resize(D.DATA_POS.LIMIT);
-            if(!GET_BLOCK(f, cchar((*cstring(n.info)).c_str()), D.DATA_POS)){
+        Atribuir(&n, "0",(*s)[0][i]);
+        if(VALID_SEG(D.DATA_POS)){
+            if((*s)[0][i] == STRING){
+                (*cstring(n.info)).resize(D.DATA_POS.LIMIT);
+                if(!GET_BLOCK(f, cchar((*cstring(n.info)).c_str()), D.DATA_POS)){
+                    cout("Ocorreu um erro ao transformar o registro");
+                    return false;
+                }
+            }
+            else if(!GET_BLOCK(f, cchar(n.info), D.DATA_POS)){
                 cout("Ocorreu um erro ao transformar o registro");
                 return false;
             }
-            cout(*cstring(n.info));
-        }
-        else if(!GET_BLOCK(f, cchar(n.info), D.DATA_POS)){
-            cout("Ocorreu um erro ao transformar o registro");
-            return false;
         }
         MR->vars.push_back(n);
         if(VALID_SEG(D.NEXT)){
@@ -519,7 +540,25 @@ bool CRIAR_DATABASE(string NOME, vector<string>CONTR[], int N_TAB){
     DATABASE db;
     db.NOME = NOME;
     db.BASE_HEADER.NUMERO_TABELAS = N_TAB;
-    CONTROL(&db,CONTR);
+    db.SEGMENTOS_LIVRES.BASE = db.SEGMENTOS_LIVRES.LIMIT = -1;
+    return CONTROL(&db, CONTR);
+}
+
+bool CRIAR_DATABASE_VAZIO(string nome){
+    DATABASE db;
+    db.NOME = nome;
+    db.TABELAS_HEADER_SEG.BASE = db.TABELAS_HEADER_SEG.LIMIT = -1;
+    db.SEGMENTOS_LIVRES.BASE = db.SEGMENTOS_LIVRES.LIMIT = -1;
+    db.BASE_HEADER.NUMERO_TABELAS = 0;
+    fstream DBASE;
+    if(!ABRIR_ARQUIVO(&DBASE, db.NOME, SAIDA)){
+        cout("Erro ao criar banco");
+        return false;
+    }
+    if(!SET_DB_HEADER(&DBASE, &db, true)){
+        cout("Erro ao criar banco");
+        return false;
+    }
     return true;
 }
 
@@ -569,6 +608,86 @@ bool INSERIR_TABELA(DATABASE *db, vector<string> *CONTR){
         delete DBASE;
         return false;
     }
+    db->BASE_HEADER.NUMERO_TABELAS++;
+    if(!SET_N_TABLES(DBASE, db)){
+        DBASE->close();
+        delete DBASE;
+        return false;
+    }
+    DBASE->close();
+    delete DBASE;
+    return true;
+}
+
+bool INSERIR_TABELA_VAZIA(DATABASE *db, string nome){
+    fstream *DBASE;
+    TABLE_HEADER TH;
+    TABLE  T;
+    META_DADO M;
+    SEGMENT SEG;
+    DBASE = OPEN_DATABASE(db);
+    if(DBASE == nullptr) return false;
+    SEG = db->TABELAS_HEADER_SEG;
+    cout(SEG.BASE);
+    if(!VALID_SEG(SEG)){
+        TH.NEXT.BASE = TH.NEXT.LIMIT = -1;
+    }else{
+        if(!LER_TABLE_HEADER(DBASE, &TH, db->TABELAS_HEADER_SEG)){
+            DBASE->close();
+            delete DBASE;
+            return false;
+        }
+    }
+    cout(SEG.BASE);
+    while(VALID_SEG(TH.NEXT)){
+        SEG = TH.NEXT;
+        if(!LER_TABLE_HEADER(DBASE, &TH, TH.NEXT)){
+            DBASE->close();
+            delete DBASE;
+            return false;
+        }
+    }
+    cout(SEG.BASE);
+    if(VALID_SEG(SEG)) SEG.BASE += SEG.LIMIT-sizeof(SEGMENT);
+    else {
+        SEG.BASE = 1 + sizeof(int);
+        SEG.LIMIT = sizeof(SEGMENT);
+    }
+    cout(SEG.BASE);
+    TH.NEXT = Dallocar(DBASE, sizeof(TABLE_HEADER));
+    if(!SET_BLOCK(DBASE, cchar(&TH.NEXT), SEG)){
+        DBASE->close();
+        delete DBASE;
+        return false;
+    }
+    SEG = TH.NEXT;
+    if(!(FILL_NEW_TABLE_HEADER(DBASE, &TH, 0) && SET_TABLE_HEADER(DBASE, &TH, SEG))){
+        DBASE->close();
+        delete DBASE;
+        return false;
+    }
+    if(!(FILL_TABLE(DBASE, &T, &TH)&&SET_TABLE(DBASE, &T, TH.TABLE_POSITION))){
+        DBASE->close();
+        delete DBASE;
+        return false;
+    }
+    M.NOME = Dallocar(DBASE, nome.size());
+    if(!SET_BLOCK(DBASE, cchar(nome.c_str()), M.NOME)){
+        cout("ERRO na criacao da tabela");
+        DBASE->close();
+        delete DBASE;
+        return false;
+    }
+    M.TIPOS.BASE = M.TIPOS.LIMIT = -1;
+    M.NOMES.NEXT = M.TIPOS;
+    M.NOMES.DATA_POS = M.NOMES.NEXT;
+    if(!SET_BLOCK(DBASE, cchar(&M), T.META_TABLE_POSITION)){
+        cout("ERRO na criacao da tabela");
+        DBASE->close();
+        delete DBASE;
+        return false;
+    }
+    db->BASE_HEADER.NUMERO_TABELAS++;
     if(!SET_N_TABLES(DBASE, db)){
         DBASE->close();
         delete DBASE;
@@ -588,8 +707,8 @@ bool INSERIR_COLUNA(DATABASE *db, string NomeTabela, string NomeColuna, char tip
     REGISTRO R;
     DBASE = OPEN_DATABASE(db);
     if(DBASE == nullptr) return false;
-    S = SEARCH_TABLE(DBASE, db, NomeTabela);
-    if(!(VALID_SEG(S) && LER_TABLE_HEADER(DBASE, &TH, S) && LER_TABELA(DBASE, &T, TH.TABLE_POSITION))){
+    S = SEARCH_TABLE(DBASE, db, &TH, &T, &M, NomeTabela);
+    if(!VALID_SEG(S)){
         cout("Ocorreu um erro ao inserir coluna");
         DBASE->close();
         delete DBASE;
@@ -602,25 +721,15 @@ bool INSERIR_COLUNA(DATABASE *db, string NomeTabela, string NomeColuna, char tip
         delete DBASE;
         return false;
     }
-    if(!LER_TABELA(DBASE, &T, TH.TABLE_POSITION)){
-        cout("Ocorreu um erro ao inserir coluna");
-        DBASE->close();
-        delete DBASE;
-        return false;
-    }
-    if(!LER_MDADO(DBASE, &M, &T)){
-        cout("Ocorreu um erro ao inserir coluna");
-        DBASE->close();
-        delete DBASE;
-        return false;
-    }
     string ax;
-    ax.resize(M.TIPOS.LIMIT);
-    if(!GET_BLOCK(DBASE, cchar(ax.c_str()), M.TIPOS)){
-        cout("Ocorreu um erro ao inserir coluna");
-        DBASE->close();
-        delete DBASE;
-        return false;
+    if(VALID_SEG(M.TIPOS)){
+        ax.resize(M.TIPOS.LIMIT);
+        if(!GET_BLOCK(DBASE, cchar(ax.c_str()), M.TIPOS)){
+            cout("Ocorreu um erro ao inserir coluna");
+            DBASE->close();
+            delete DBASE;
+            return false;
+        }
     }
     ax.push_back(tipo);
     if(!SET_COLUNA(DBASE, db, &M, &T, ax, NomeColuna)){
@@ -629,45 +738,51 @@ bool INSERIR_COLUNA(DATABASE *db, string NomeTabela, string NomeColuna, char tip
         delete DBASE;
         return false;
     }
-    if(!LER_REGISTRO(DBASE, &R, T.REGISTROS)){
-        cout("Ocorreu um erro ao inserir coluna");
-        DBASE->close();
-        delete DBASE;
-        return false;
-    }
-    for(int i=0; i<TH.NUMERO_REGISTROS; i++){
-        DATA D = R.DADOS;
-        SEGMENT S = T.REGISTROS;
-        S.LIMIT = sizeof(DATA);
-        while(VALID_SEG(D.NEXT)){
-            S = D.NEXT;
-            if(!GET_BLOCK(DBASE, cchar(&D), D.NEXT)){
-                cout("Ocorreu um erro ao inserir coluna");
-                DBASE->close();
-                delete DBASE;
-                return false;
-            }
-        }
-        D.NEXT = Dallocar(DBASE, sizeof(DATA));
-        if(!SET_BLOCK(DBASE, cchar(&D), S));
-        DATA ax;
-        ax.DATA_POS.BASE = ax.DATA_POS.LIMIT = -1;
-        ax.NEXT = ax.DATA_POS;
-        if(!SET_BLOCK(DBASE, cchar(&ax), D.NEXT)){
+    if(VALID_SEG(T.REGISTROS)){
+        if(!LER_REGISTRO(DBASE, &R, T.REGISTROS)){
             cout("Ocorreu um erro ao inserir coluna");
             DBASE->close();
             delete DBASE;
             return false;
         }
-        if(VALID_SEG(R.NEXT)){
-            if(!LER_REGISTRO(DBASE, &R, R.NEXT)){
+        SEGMENT S = T.REGISTROS;
+        S.LIMIT = sizeof(DATA);
+        for(int i=0; i<TH.NUMERO_REGISTROS; i++){
+            DATA D = R.DADOS;
+            while(VALID_SEG(D.NEXT)){
+                S = D.NEXT;
+                if(!GET_BLOCK(DBASE, cchar(&D), D.NEXT)){
+                    cout("Ocorreu um erro ao inserir coluna");
+                    DBASE->close();
+                    delete DBASE;
+                    return false;
+                }
+            }
+            D.NEXT = Dallocar(DBASE, sizeof(DATA));
+            if(!SET_BLOCK(DBASE, cchar(&D), S));
+            DATA ax;
+            ax.DATA_POS.BASE = ax.DATA_POS.LIMIT = -1;
+            ax.NEXT = ax.DATA_POS;
+            if(!SET_BLOCK(DBASE, cchar(&ax), D.NEXT)){
                 cout("Ocorreu um erro ao inserir coluna");
                 DBASE->close();
                 delete DBASE;
                 return false;
             }
-        }else break;
+            S = R.NEXT;
+            S.LIMIT = sizeof(DATA);
+            if(VALID_SEG(R.NEXT)){
+                if(!LER_REGISTRO(DBASE, &R, R.NEXT)){
+                    cout("Ocorreu um erro ao inserir coluna");
+                    DBASE->close();
+                    delete DBASE;
+                    return false;
+                }
+            }else break;
+        }
     }
+    DBASE->close();
+    delete DBASE;
     return true;
 }
 
@@ -680,14 +795,14 @@ bool INSERIR_REGISTRO(DATABASE *db, MEM_REGISTER REGISTER){
     REGISTRO R;
     DBASE = OPEN_DATABASE(db);
     if(DBASE == nullptr) return false;
-    SH = SEARCH_TABLE(DBASE, db, REGISTER.nome);
-    if(!(VALID_SEG(SH) && LER_TABLE_HEADER(DBASE, &TH, SH) && LER_TABELA(DBASE, &TABELA, TH.TABLE_POSITION))){
+    SH = SEARCH_TABLE(DBASE, db, &TH, &TABELA, &MDADO, REGISTER.nome);
+    if(!VALID_SEG(SH)){
         DBASE->close();
         delete DBASE;
         cout("Ocorreu um erro ao ler o registro");
         return false;
     }
-    SEGMENT SEG = Dallocar(DBASE, sizeof(REGISTRO));
+    SEGMENT SEG;
     if(VALID_SEG(TABELA.REGISTROS)){
         P = TABELA.REGISTROS;
         if(!LER_REGISTRO(DBASE, &R, TABELA.REGISTROS)){
@@ -696,22 +811,19 @@ bool INSERIR_REGISTRO(DATABASE *db, MEM_REGISTER REGISTER){
             cout("Ocorreu um erro ao ler o registro");
             return false;
         }
-        while(VALID_SEG(R.NEXT)){
+        for(int i=0; i<TH.NUMERO_REGISTROS-1; i++){
             P = R.NEXT;
-            if(!LER_REGISTRO(DBASE, &R, R.NEXT)){
-                DBASE->close();
-                delete DBASE;
-                cout("Ocorreu um erro ao ler o registro");
-                return false;
-            }
-            if(R.NEXT.BASE==P.BASE) {
-                R.NEXT.BASE = R.NEXT.LIMIT = -1;
-                SET_REGISTER(DBASE, &R, P);
+            if(VALID_SEG(R.NEXT)){
+                if(!LER_REGISTRO(DBASE, &R, R.NEXT)){
+                    DBASE->close();
+                    delete DBASE;
+                    cout("Ocorreu um erro ao ler o registro");
+                    return false;
+                }
             }
         }
+        SEG = Dallocar(DBASE, sizeof(REGISTRO));
         R.NEXT = SEG;
-        cout("SEG ALOCADO:"<<R.NEXT.BASE);
-        cout("SEG ALOCADO:"<<R.NEXT.LIMIT);
         if(!SET_REGISTER(DBASE, &R, P)){
             DBASE->close();
             delete DBASE;
@@ -727,14 +839,13 @@ bool INSERIR_REGISTRO(DATABASE *db, MEM_REGISTER REGISTER){
             cout("Ocorreu um erro ao inserir registro");
             return false;
         }
-        /*
         if(!SET_INDEX(DBASE, &TABELA, &TH, &R, SEG)){
             DBASE->close();
             delete DBASE;
             cout("Ocorreu um erro ao criar indice");
             return false;
         }
-        */
+
     }
     else{
         TH.NUMERO_REGISTROS++;
@@ -744,7 +855,14 @@ bool INSERIR_REGISTRO(DATABASE *db, MEM_REGISTER REGISTER){
             cout("Ocorreu um erro ao inserir registro");
             return false;
         }
+        SEG = Dallocar(DBASE, sizeof(REGISTRO));
         TABELA.REGISTROS = SEG;
+        if(!SET_TABLE(DBASE, &TABELA, TH.TABLE_POSITION)){
+            DBASE->close();
+            delete DBASE;
+            cout("Ocorreu um erro ao inserir registro");
+            return false;
+        }
         if(!SET_INDEX(DBASE, &TABELA, &TH, &R,SEG)){
             DBASE->close();
             delete DBASE;
@@ -754,11 +872,6 @@ bool INSERIR_REGISTRO(DATABASE *db, MEM_REGISTER REGISTER){
     }
     DATA DADOS[TH.NUMERO_COLUNAS];
     if(!FILL_DADOS(DBASE, &TH, DADOS)){
-        DBASE->close();
-        delete DBASE;
-        return false;
-    }
-    if(!LER_MDADO(DBASE, &MDADO, &TABELA)){
         DBASE->close();
         delete DBASE;
         return false;
@@ -775,9 +888,6 @@ bool INSERIR_REGISTRO(DATABASE *db, MEM_REGISTER REGISTER){
             REGISTER.vars[i-1].nome = s[i];
         }
     for(unsigned int i=0; i<REGISTER.vars.size(); i++){
-    cout(s[1]);
-    cout(s[2]);
-    cout(s[3]);
         for(int j=0; j<TH.NUMERO_COLUNAS; j++){
             if(s[j+1]==REGISTER.vars[i].nome){
                 DADOS[j].DATA_POS = Dallocar(DBASE, TSize(s[0][j]));
@@ -789,9 +899,7 @@ bool INSERIR_REGISTRO(DATABASE *db, MEM_REGISTER REGISTER){
     }
     R.DADOS = DADOS[0];
     R.NEXT.BASE = R.NEXT.LIMIT = -1;
-    cout("NEXT:"<<R.NEXT.BASE);
-    cout("NEXT:"<<R.NEXT.LIMIT);
-    if(!(SET_DADOS(DBASE, &TH, DADOS) && SET_REGISTER(DBASE, &R, SEG))){
+    if(!(SET_REGISTER(DBASE, &R, SEG) && SET_DADOS(DBASE, &TH, DADOS))){
         DBASE->close();
         delete DBASE;
         return false;
@@ -908,12 +1016,13 @@ fstream *OPEN_DATABASE(DATABASE *db){
     }
     (*DBASE).read(cchar(&db->BASE_HEADER.NUMERO_TABELAS), sizeof(int));
     (*DBASE).read(cchar(&db->TABELAS_HEADER_SEG), sizeof(SEGMENT));
+    (*DBASE).read(cchar(&db->SEGMENTOS_LIVRES), sizeof(SEGMENT));
     return DBASE;
 }
 
 bool ABRIR_ARQUIVO(fstream *f, string NOME, char TIPO_ABERTURA){
-    if(TIPO_ABERTURA == ENTRADA) (*f).open(NOME, fstream::in);
-    else if(TIPO_ABERTURA == SAIDA) (*f).open(NOME, fstream::out);
-    else if(TIPO_ABERTURA == ENTRADA_SAIDA) (*f).open(NOME, fstream::in|fstream::out);
+    if(TIPO_ABERTURA == ENTRADA) (*f).open(NOME, fstream::in | fstream::binary);
+    else if(TIPO_ABERTURA == SAIDA) (*f).open(NOME, fstream::out | fstream::binary);
+    else if(TIPO_ABERTURA == ENTRADA_SAIDA) (*f).open(NOME, fstream::in | fstream::out | fstream::binary);
     return (*f).is_open();
 }

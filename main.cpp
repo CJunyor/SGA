@@ -21,6 +21,26 @@ using namespace std;
 int main()
 {
     /*
+        DATABASE db;
+        db.NOME = "teste.mydb";
+        vector<string>c;
+        c.push_back("Professores");
+        c.push_back("4");
+        c.push_back("sssi");
+        c.push_back("Nome");
+        c.push_back("CPF");
+        c.push_back("Matricula");
+        c.push_back("Idade");
+        INSERIR_TABELA(&db, &c);
+    //*/
+
+    /*
+        DATABASE db;
+        db.NOME = "teste.mydb";
+        INSERIR_COLUNA(&db, "Alunos", "Teste", STRING);
+    //*/
+
+    /*
     vector<string>c[2];
     c[0].push_back("Alunos");
     c[0].push_back("3");
@@ -34,7 +54,7 @@ int main()
     c[1].push_back("Nome");
     c[1].push_back("Marca");
     c[1].push_back("Preco");
-    CRIAR_DATABASE("teste.mydb",c,2);
+    CRIAR_DATABASE("teste.mydb", c, 2);
     //*/
 
     //*
@@ -46,13 +66,29 @@ int main()
     }
     string Comando;
     while(!f.eof()){
-        while(getline(f, Comando) && Comando[0]=='-');
+        getline(f, Comando);
+        if(Comando[1]=='-') continue;
+        if(Comando == "PARAR") break;
         cout("Comando: "<<Comando<<"\n");
         analise(cchar(Comando.c_str()));
-        comando();
     }
     //*/
+/*
+    DATABASE d;
+    d.NOME = "teste.mydb";
+    fstream *f;
+    f = OPEN_DATABASE(&d);
+    cout(d.TABELAS_HEADER_SEG.BASE);
+    TABLE_HEADER TH;
+    LER_TABLE_HEADER(f, &TH, d.TABELAS_HEADER_SEG);
+    cout(TH.TABLE_POSITION.BASE);
+    cout(TH.TABLE_POSITION.LIMIT);
+    cout(TH.NUMERO_COLUNAS);
+    cout(TH.NUMERO_REGISTROS);
+    cout(TH.NEXT.BASE);
+    cout(TH.NEXT.LIMIT);
 
+*/
     /*
     node ax;
     MEM_REGISTER R;
