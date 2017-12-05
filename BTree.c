@@ -209,7 +209,7 @@ BTree buscaChave(BTree raiz, int chave, int *position)
   while (buffer != NULL)
    {
      pos = buscaBin(buffer, buffer->preenchidos, chave);
-     if (pos < buffer->preenchidos && buffer->chave[pos].n == chave){
+     if (pos < buffer->preenchidos && buffer->chave[pos].n == chave && buffer->chave[pos].seek.BASE != -1){
         *position = pos;
          return(buffer);
      }
@@ -218,6 +218,7 @@ BTree buscaChave(BTree raiz, int chave, int *position)
         buffer = buffer->filhos[pos];
      }
    }
+   return NULL;
 }
 
 void em_ordem(BTree raiz)
@@ -233,5 +234,32 @@ void em_ordem(BTree raiz)
       }
      em_ordem(raiz->filhos[i]);
       }
+}
+
+int salvaBTree(char nome[], BTree *raiz, SEGMENT seg, int seek)
+{
+    int i, tell;
+    FILE *fp;
+    fp = fopen(nome, "r+b");
+    if (fp==NULL){
+        printf("Erro ao abrir o BD");
+        exit(1);
+    }
+    fseek(fp, seek, SEEK_SET);
+
+  if (raiz != NULL)
+   {
+     for (i = 0; i < (*raiz)->preenchidos && ftell(fp) < seg.LIMIT; i++)
+      {
+        tell = salvaBTree(nome, &((*raiz)->filhos[i]), seg, ftell(fp));
+        fseek(fp, tell, SEEK_SET);
+        fwrite(&((*raiz)->chave[i]), sizeof(indice), 1, fp);
+
+      }
+     //em_ordem(raiz->filhos[i]);
+      }
+      tell = ftell(fp);
+      fclose(fp);
+      return tell;
 }
 

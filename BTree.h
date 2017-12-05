@@ -58,4 +58,6 @@ BTree buscaChave(BTree raiz, int chave, int *position);
 void em_ordem(BTree raiz);
 // Printa os valores da BTree de forma crescente, baseada nas funções do site da ifmg.
 
+int salvaBTree(char nome[], BTree *raiz, SEGMENT seg, int seek);
+//PARÂMETROS: NOME DO BD, RAIZ DA BTREE, SEGMENT DOS INDICES, A BASE DO SEGMENT QUE VC TA PASSANDO (.BASE)
 
