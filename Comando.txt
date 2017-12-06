@@ -5,6 +5,7 @@
 --create column ("Idade") int on table Alunos in teste2;
 --insert on teste2 into Alunos Values ("Candido");
 --insert on teste2 into Alunos Values ("Diego");
-select on teste2 * from Alunos
+--delete on teste2 * from Alunos Where ID = 0;
+select on teste2 * from Alunos;
 --select on teste * from Professores;
 --insert on teste into Professores Values ("Jorge","2424242424","26589657458","145");

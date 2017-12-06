@@ -84,6 +84,20 @@ void comando(char Query[], char Identificadores[][50], char KEYS[][8], char Lite
             db.NOME.append(".mydb");
             if(Tam[0]>=2 &&!strcmp(KEYS[2],"FROM")){
                 s[0] = Identificadores[1];
+                if(Tam[1]>=4 && Tam[0]>=3 &&!strcmp(KEYS[3],"WHERE")){
+                    s[1] = Identificadores[2];
+                    if(Operadores[0] == '=' && Tam[0]>=4){
+                        void *p = nullptr;
+                        if(s[1] == "ID") s[2] = Identificadores[3];
+                        else{
+                            p = Malocar(STRING);
+                            *cstring(p) = Identificadores[3];
+                        }
+                        vector<MEM_REGISTER> v = PEGAR_REGISTRO(&db, s, &p);
+                        IMPRIMIR_MR(&v, *cstring(p));
+                        delete cstring(p);
+                    }
+                }
                 if(Operadores[0] == '*') {
                     s[1] = "*";
                     vector<MEM_REGISTER> v = PEGAR_REGISTRO(&db, s, &p);
@@ -91,8 +105,44 @@ void comando(char Query[], char Identificadores[][50], char KEYS[][8], char Lite
                     delete cstring(p);
                 }
             }
+            else if(Tam[1]>=4 && Tam[0]>=2 &&!strcmp(KEYS[3],"WHERE")){
+                s[0] = Identificadores[1];
+            }
         }
-	}else{
+	}else if(Tam[1]>=1 && !strcmp(KEYS[0], "DELETE")){
+        if(Tam[1]>=3 && Tam[0]>=1 && !strcmp(KEYS[1], "ON" )){
+            DATABASE db;
+            string s[3];
+            void *p = nullptr;
+            db.NOME = Identificadores[0];
+            db.NOME.append(".mydb");
+            if(Tam[0]>=2 &&!strcmp(KEYS[2],"FROM")){
+                s[0] = Identificadores[1];
+                if(Tam[1]>=4 && Tam[0]>=3 &&!strcmp(KEYS[3],"WHERE")){
+                    s[1] = Identificadores[2];
+                    if(Operadores[0] == '=' && Tam[0]>=4){
+                        void *p = nullptr;
+                        if(s[1] == "ID") s[2] = Identificadores[3];
+                        else{
+                            p = Malocar(STRING);
+                            *cstring(p) = Identificadores[3];
+                        }
+                        if(DELETAR_REGISTRO(&db, s, &p)) cout("Registro Deletado");
+                        delete cstring(p);
+                    }
+                }
+                if(Operadores[0] == '*') {
+                    s[1] = "*";
+                    if(DELETAR_REGISTRO(&db, s, &p)) cout("Registros Deletados");
+                    delete cstring(p);
+                }
+            }
+            else if(Tam[1]>=4 && Tam[0]>=2 &&!strcmp(KEYS[3],"WHERE")){
+                s[0] = Identificadores[1];
+            }
+        }
+	}
+	else{
 		printf("\n[ %s ] Comando Invalido!\n", Query);
 	}
 }
@@ -185,7 +235,7 @@ int isKey(char Word[])
     char WORDKEYS[][9] = {
                         "CREATE", "TABLE", "DATABASE", "UPDATE", "SELECT",
                         "SET", "WHERE", "INSERT", "INTO", "VALUES", "FROM",
-                        "ON", "COLUMN", "IN"
+                        "ON", "COLUMN", "IN", "DELETE"
                         };
     int i;
     for(i=0; i<N_KEYS; i++)

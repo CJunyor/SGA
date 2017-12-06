@@ -115,6 +115,8 @@ bool SET_REGISTER(fstream *, REGISTRO  *, SEGMENT);
 bool SET_DADOS(fstream *, TABLE_HEADER *, DATA []);
 bool SET_COLUNA(fstream *, DATABASE *, META_DADO *, TABLE *, string, string);
 bool INSERIR_REGISTRO(DATABASE *, MEM_REGISTER);
+bool DELETAR_REGISTRO(DATABASE *, string [3], void **);
+bool DELETAR_DADOS(fstream *, DATABASE *, DATA *);
 bool INSERIR_COLUNA(DATABASE *, string, string, char);
 bool INSERIR_TABELA(DATABASE *, vector<string> *);
 bool INSERIR_TABELA_VAZIA(DATABASE *, string);
@@ -189,3 +191,5 @@ BTree buscaChave(BTree raiz, int chave, int *position);
 void em_ordem(BTree raiz);
 // Printa os valores da BTree de forma crescente, baseada nas funções do site da ifmg.
 
+int salvaBTree(char nome[], BTree *raiz, SEGMENT seg, int seek);
+//PARÂMETROS: NOME DO BD, RAIZ DA BTREE, SEGMENT DOS INDICES, A BASE DO SEGMENT QUE VC TA PASSANDO (.BASE)
