@@ -1,11 +1,38 @@
---create database teste2;
---create table Alunos on teste2;
---create column ("Nome") string on table Alunos in teste2;
---create column ("CPF") string on table Alunos in teste2;
---create column ("Idade") int on table Alunos in teste2;
---insert on teste2 into Alunos Values ("Candido");
---insert on teste2 into Alunos Values ("Diego");
---delete on teste2 * from Alunos Where ID = 0;
-select on teste2 * from Alunos;
---select on teste * from Professores;
---insert on teste into Professores Values ("Jorge","2424242424","26589657458","145");
+--select * from teste.Alunos;
+--select * from teste.Alunos where ID="2";
+--PARAR
+---------------------------------------------------------
+--create database teste;
+--create table Alunos INTO teste;
+--create column "Nome" string INTO teste.Alunos;
+--create column "CPF" string into teste.Alunos;
+--create column "Idade" int INTO teste.Alunos;
+---------------------------------------------------------
+--insert into teste.Alunos Values ("Candido");
+--insert into teste.Alunos Values ("Maria");
+--insert into teste.Alunos Values ("Diego");
+---------------------------------------------------------
+--UPDATE teste.Alunos SET Idade="20" Where Nome="Maria";
+--UPDATE teste.Alunos SET Idade="24" Where Nome="Diego";
+---------------------------------------------------------
+--select * from teste.Alunos where ID="0";
+--select * from teste.Alunos where Nome="Candido";
+--select * from teste.Alunos where Nome="Maria";
+-----------------------------------------------------------------
+--UPDATE teste.Alunos SET Idade="19" Where Nome="Candido";
+--UPDATE teste.Alunos SET CPF="321654987" Where Nome="Candido";
+--UPDATE teste.Alunos SET CPF="321987654" Where Nome="Diego";
+-----------------------------------------------------------------
+--select * from teste.Alunos;
+-----------------------------------------------------------------
+--delete on teste * from Alunos;
+-----------------------------------------------------------------
+--create table Professores INTO teste;
+--create column "Nome" string INTO teste.Professores;
+--create column "CPF" string into teste.Professores;
+--create column "Idade" int INTO teste.Professores;
+--create column "Salario" float INTO teste.Professores;
+----------------------------------------------------------------------------------
+--insert into teste.Professores Values ("Jorge","231564897","100","5658.0");
+----------------------------------------------------------------------------------
+--select * from teste.Professores;

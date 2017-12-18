@@ -1,7 +1,8 @@
 #ifndef ANALISADOR_H_INCLUDED
 #define ANALISADOR_H_INCLUDED
-/* Função onde printa a query e diz cada tipo de palavra que foi digitado */
-void printal();
+#define N_KEYS 15
+/* Função onde printa a query e diz cada tipo de palavra que foi digitada */
+void printal(char [][50], char [][8], char [][50], char [20], char [20], int [5]);
 
 /* Verifica se é um indentificador */
 int isInd(char ch);
@@ -13,13 +14,13 @@ int isOp(char ch);
 int isDel(char ch);
 
 /* Verifica se é uma chave */
-int isKey(char * Query);
+int isKey(char []);
 
 /* Analisa a quary separando as strings e indetificando cada uma para pode fazer a manipulação */
-void analise(char *Query);
+void analise(char []);
 
 void createDB();
-void comando();
+void comando(char [], char [][50], char [][8], char [][50], char [20], char [20], int [5]);
 
-const char * ficarBig(char []);
+void ficarBig(char [], char []);
 #endif // ANALISADOR_H_INCLUDED
